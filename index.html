@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>엄마 꼬리 🐾</title>
+<style>
+/* ── 리셋 & 기본 ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Noto Serif KR', 'Malgun Gothic', serif;
+  background: #0a0a0a;
+  color: #ddd;
+  overflow-x: hidden;
+}
+
+/* ── 화면 전환 ── */
+.screen { display: none; }
+.screen.active { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ══════════════════════════════
+   타이틀 화면
+══════════════════════════════ */
+#title-screen {
+  background: linear-gradient(180deg, #0a0a0a 0%, #1a0800 50%, #0a0a0a 100%);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  min-height: 100vh;
+}
+.title-paw {
+  font-size: 72px;
+  animation: pulse 2.5s ease-in-out infinite;
+  display: block;
+  margin-bottom: 20px;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.12); opacity: 0.85; }
+}
+.title-main {
+  font-size: clamp(36px, 8vw, 64px);
+  font-weight: 900;
+  color: #f5c842;
+  letter-spacing: 4px;
+  text-shadow: 0 0 40px rgba(245,200,66,0.4);
+  margin-bottom: 12px;
+}
+.title-sub {
+  font-size: clamp(14px, 3vw, 18px);
+  color: #c8a060;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+.title-desc {
+  font-size: clamp(12px, 2.5vw, 15px);
+  color: #888;
+  margin-bottom: 48px;
+  max-width: 400px;
+}
+.mode-btns {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 600px;
+}
+.mode-btn {
+  flex: 1;
+  min-width: 220px;
+  max-width: 280px;
+  padding: 28px 20px;
+  border-radius: 16px;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.25s, box-shadow 0.25s;
+  text-decoration: none;
+}
+.mode-btn:hover { transform: translateY(-4px); }
+.mode-btn .btn-icon { font-size: 40px; display: block; margin-bottom: 10px; }
+.mode-btn .btn-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.mode-btn .btn-desc  { font-size: 13px; opacity: 0.8; }
+.btn-webtoon {
+  border: 2px solid #f5c842;
+  background: transparent;
+  color: #f5c842;
+}
+.btn-webtoon:hover { box-shadow: 0 8px 32px rgba(245,200,66,0.25); }
+.btn-audio {
+  background: linear-gradient(135deg, #f5c842, #e8a020);
+  color: #111;
+  border: none;
+}
+.btn-audio:hover { box-shadow: 0 8px 32px rgba(245,200,66,0.4); }
+
+/* ══════════════════════════════
+   공통 헤더
+══════════════════════════════ */
+.viewer-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,10,0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #222;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+.btn-home {
+  background: none;
+  border: 1px solid #444;
+  color: #aaa;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.btn-home:hover { border-color: #f5c842; color: #f5c842; }
+.header-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f5c842;
+  flex: 1;
+}
+.header-progress {
+  font-size: 13px;
+  color: #888;
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════
+   웹툰 모드
+══════════════════════════════ */
+#webtoon-screen { background: #111; }
+.webtoon-scroll {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+.scene-block {
+  margin-bottom: 4px;
+}
+.scene-img {
+  width: 100%;
+  display: block;
+  background: #1a1a1a;
+}
+.scene-img img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.scene-subs {
+  background: #141414;
+  padding: 16px 20px;
+  border-bottom: 1px solid #222;
+}
+.scene-num {
+  font-size: 11px;
+  color: #555;
+  margin-bottom: 8px;
+  font-family: monospace;
+}
+.scene-line {
+  font-size: 16px;
+  color: #ddd;
+  line-height: 1.75;
+  padding: 2px 0;
+}
+.scene-empty {
+  font-size: 13px;
+  color: #444;
+  font-style: italic;
+}
+/* 웹툰 하단 네비 */
+.webtoon-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(10,10,10,0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid #222;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  z-index: 100;
+}
+.nav-btn {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  color: #ccc;
+  padding: 8px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.nav-btn:hover { background: #2a2a2a; border-color: #f5c842; color: #f5c842; }
+.nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* ══════════════════════════════
+   오디오북 모드
+══════════════════════════════ */
+#audiobook-screen { background: #0d0d0d; }
+
+/* 오디오 바 */
+.audio-bar {
+  position: sticky;
+  top: 57px;  /* 헤더 높이 */
+  z-index: 90;
+  background: rgba(15,15,15,0.97);
+  border-bottom: 1px solid #1e1e1e;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.audio-play-btn {
+  background: #f5c842;
+  color: #111;
+  border: none;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.audio-play-btn:hover { transform: scale(1.1); }
+.audio-time {
+  font-size: 13px;
+  color: #999;
+  font-family: monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.audio-seek {
+  flex: 1;
+  height: 4px;
+  appearance: none;
+  background: #333;
+  border-radius: 2px;
+  cursor: pointer;
+  outline: none;
+}
+.audio-seek::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px; height: 14px;
+  background: #f5c842;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.audio-vol {
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.audio-vol:hover { opacity: 1; }
+
+/* 오디오북 이미지 뷰어 */
+.ab-scroll {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 0 120px;
+}
+.ab-scene {
+  margin-bottom: 2px;
+}
+.ab-scene img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+/* 자막 오버레이 */
+#subtitle-overlay {
+  position: fixed;
+  bottom: 56px;
+  left: 0; right: 0;
+  z-index: 80;
+  pointer-events: none;
+  text-align: center;
+  padding: 0 16px;
+  transition: opacity 0.3s;
+}
+.subtitle-inner {
+  display: inline-block;
+  background: rgba(0,0,0,0.82);
+  color: #fff;
+  font-size: clamp(14px, 3.5vw, 18px);
+  padding: 10px 24px;
+  border-radius: 4px;
+  max-width: 700px;
+  line-height: 1.5;
+}
+/* 오디오북 하단 네비 */
+.ab-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(10,10,10,0.95);
+  border-top: 1px solid #1e1e1e;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  z-index: 100;
+}
+
+/* ══════════════════════════════
+   엔딩 카드
+══════════════════════════════ */
+.ending-card {
+  background: linear-gradient(180deg, #0a0a0a, #150800);
+  text-align: center;
+  padding: 60px 24px 40px;
+  margin-top: 4px;
+}
+.ending-paw { font-size: 52px; margin-bottom: 16px; display: block; }
+.ending-title {
+  font-size: clamp(20px, 5vw, 28px);
+  color: #f5c842;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.ending-sub { font-size: 16px; color: #c8a060; margin-bottom: 32px; }
+.ending-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.ending-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: transform 0.2s;
+  border: none;
+}
+.ending-btn:hover { transform: translateY(-2px); }
+.btn-restart { background: #f5c842; color: #111; }
+.btn-home-end { background: #1e1e1e; color: #ccc; border: 1px solid #444; }
+
+/* 로딩 스피너 */
+.img-placeholder {
+  background: #1a1a1a;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  font-size: 24px;
+}
+
+@media (max-width: 600px) {
+  .mode-btns { flex-direction: column; align-items: center; }
+  .mode-btn { min-width: 280px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════
+     1. 타이틀 화면
+══════════════════════════════ -->
+<div id="title-screen" class="screen active">
+  <span class="title-paw">🐾</span>
+  <h1 class="title-main">엄마 꼬리</h1>
+  <p class="title-sub">사랑은 반드시 돌아옵니다</p>
+  <p class="title-desc">다사랑 숲에서 전해오는 곰 가족의 이야기</p>
+  <div class="mode-btns">
+    <div class="mode-btn btn-webtoon" onclick="startWebtoon()">
+      <span class="btn-icon">📖</span>
+      <div class="btn-title">웹툰으로 보기</div>
+      <div class="btn-desc">이미지 + 자막<br>(음성 없음)</div>
+    </div>
+    <div class="mode-btn btn-audio" onclick="startAudiobook()">
+      <span class="btn-icon">🎧</span>
+      <div class="btn-title">오디오북으로 듣기</div>
+      <div class="btn-desc">이미지 + 자막 + 음성<br>(낭독 약 65분)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     2. 웹툰 모드
+══════════════════════════════ -->
+<div id="webtoon-screen" class="screen">
+  <header class="viewer-header">
+    <button class="btn-home" onclick="goHome()">← 홈</button>
+    <span class="header-title">📖 웹툰 모드</span>
+    <span class="header-progress" id="wt-progress">0 / 102</span>
+  </header>
+
+  <div class="webtoon-scroll" id="webtoon-container"></div>
+
+  <nav class="webtoon-nav">
+    <button class="nav-btn" id="wt-prev" onclick="wtNav(-1)">◀ 이전</button>
+    <button class="nav-btn" id="wt-next" onclick="wtNav(1)">다음 ▶</button>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════
+     3. 오디오북 모드
+══════════════════════════════ -->
+<div id="audiobook-screen" class="screen">
+  <header class="viewer-header">
+    <button class="btn-home" onclick="goHome()">← 홈</button>
+    <span class="header-title">🎧 오디오북 모드</span>
+    <span class="header-progress" id="ab-progress">0 / 102</span>
+  </header>
+
+  <div class="audio-bar">
+    <button class="audio-play-btn" id="play-btn" onclick="togglePlay()">▶</button>
+    <span class="audio-time" id="audio-time">0:00 / 64:37</span>
+    <input type="range" class="audio-seek" id="seek-bar"
+           min="0" max="3877" value="0" step="1"
+           oninput="seekTo(this.value)">
+    <span class="audio-vol" id="vol-btn" onclick="toggleMute()">🔊</span>
+  </div>
+
+  <audio id="main-audio" src="audio.m4a" preload="metadata"></audio>
+
+  <div class="ab-scroll" id="ab-container"></div>
+
+  <div id="subtitle-overlay">
+    <div class="subtitle-inner" id="sub-text"></div>
+  </div>
+
+  <nav class="ab-nav">
+    <button class="nav-btn" id="ab-prev" onclick="abNav(-1)">◀ 이전</button>
+    <button class="nav-btn" id="ab-next" onclick="abNav(1)">다음 ▶</button>
+  </nav>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// 데이터
+// ══════════════════════════════════════════════════════════════════
+const TOTAL_IMAGES    = 102;
+const TOTAL_DURATION  = 3877;
+const DUR_PER_IMAGE   = TOTAL_DURATION / TOTAL_IMAGES;
+
+const SUBS = [{"start": 0, "end": 3, "text": "자식이 전화를 안 합니다."}, {"start": 3, "end": 4, "text": "바쁘겠지?"}, {"start": 4, "end": 6, "text": "하면 하루가 가고."}, {"start": 6, "end": 8, "text": "괜찮겠지?"}, {"start": 8, "end": 10, "text": "하면 일주일이 가고."}, {"start": 10, "end": 14, "text": "잘 있겠지 하면 한 달이 갑니다."}, {"start": 14, "end": 17, "text": "그래도 전화기는 항상 곁에 둡니다."}, {"start": 17, "end": 20, "text": "밥 먹다가도 옆에 두고."}, {"start": 20, "end": 23, "text": "주무실 때도 베개 곁에 두고."}, {"start": 23, "end": 26, "text": "혹시 전화할까봐?"}, {"start": 26, "end": 29, "text": "여러분, 지금 이 마음."}, {"start": 29, "end": 32, "text": "아시는 분 계십니까?"}, {"start": 32, "end": 37, "text": "오늘은 그 마음을 가진 곰 한 마리 이야기를 들려 드리겠습니다."}, {"start": 37, "end": 40, "text": "여러분, 안녕하세요?"}, {"start": 40, "end": 42, "text": "초가등불입니다."}, {"start": 42, "end": 46, "text": "오늘은 조금 특별한 이야기를 들려 드리려고 합니다."}, {"start": 46, "end": 50, "text": "야담도 아니고 민담도 아닙니다."}, {"start": 50, "end": 52, "text": "그냥 이야기입니다."}, {"start": 52, "end": 55, "text": "동물들 이야기입니다만."}, {"start": 55, "end": 58, "text": "듣다 보시면 아실 겁니다."}, {"start": 58, "end": 62, "text": "이것이 동물 이야기가 아니라는 것을."}, {"start": 62, "end": 65, "text": "웃음이 나오는 장면도 있을 겁니다."}, {"start": 65, "end": 69, "text": "또 어느 순간엔 눈물이 나오실 수도 있습니다."}, {"start": 69, "end": 72, "text": "그것은 부끄러운 일이 아닙니다."}, {"start": 72, "end": 75, "text": "그냥 두시면 됩니다."}, {"start": 75, "end": 78, "text": "흐르는 대로 두시면 됩니다."}, {"start": 78, "end": 81, "text": "그리고 이 이야기가 끝날 때쯤."}, {"start": 81, "end": 85, "text": "전화 한 통 하고 싶은 분이 생기실 겁니다."}, {"start": 85, "end": 88, "text": "오랫동안 못 보신 분."}, {"start": 88, "end": 91, "text": "오랫동안 연락 못하신 분."}, {"start": 91, "end": 94, "text": "그때 전화하시면 됩니다."}, {"start": 94, "end": 97, "text": "그분은 반드시 받으실 겁니다."}, {"start": 97, "end": 100, "text": "기다리고 계셨을 테니까요."}, {"start": 100, "end": 103, "text": "자 시작하겠습니다."}, {"start": 103, "end": 106, "text": "엄마 꼬리 이야기입니다."}, {"start": 106, "end": 111, "text": "다사랑 숲에서 전해 오는 곰 가족의 이야기입니다."}, {"start": 111, "end": 114, "text": "첫 번째 이야기 — 오래된 사진 한 장."}, {"start": 114, "end": 117, "text": "세상 어딘가에?"}, {"start": 117, "end": 121, "text": "사계절이 아주 뚜렷한 큰 숲이 있었습니다."}, {"start": 121, "end": 124, "text": "봄에는 온 숲이 꽃으로 뒤덮이고."}, {"start": 124, "end": 129, "text": "여름에는 나무들이 하늘을 가릴 만큼 우거지고."}, {"start": 129, "end": 133, "text": "가을에는 붉고 노란 잎들이 바람에 날리고."}, {"start": 133, "end": 137, "text": "겨울에는 하얀 눈이 소복소복 쌓이는 곳이었습니다."}, {"start": 137, "end": 141, "text": "그 숲의 이름은 다사랑 숲이었습니다."}, {"start": 141, "end": 146, "text": "다사랑 숲에는 아주 많은 동물 가족들이 살고 있었습니다."}, {"start": 146, "end": 148, "text": "곰도 있었고."}, {"start": 148, "end": 150, "text": "여우도 있었고."}, {"start": 150, "end": 153, "text": "거북이도 있었고."}, {"start": 153, "end": 155, "text": "토끼도 있었습니다."}, {"start": 155, "end": 158, "text": "서로 다르게 생겼지만."}, {"start": 158, "end": 161, "text": "한 가지 공통점이 있었습니다."}, {"start": 161, "end": 164, "text": "모두 가족이 있었습니다."}, {"start": 164, "end": 168, "text": "그리고 모든 가족에게는 이야기가 있었습니다."}, {"start": 168, "end": 173, "text": "오늘은 그중에서 곰 가족의 이야기를 들려 드리겠습니다."}, {"start": 173, "end": 175, "text": "이야기를 시작하기 전에."}, {"start": 175, "end": 179, "text": "오래된 사진 한 장을 먼저 보여드리겠습니다."}, {"start": 179, "end": 182, "text": "사십 년도 더 된 옛날."}, {"start": 182, "end": 186, "text": "다사랑 숲에 젊은 곰 부부가 살고 있었습니다."}, {"start": 186, "end": 190, "text": "남편 곰은 키가 크고 힘이 셌습니다."}, {"start": 190, "end": 194, "text": "아내 곰은 눈이 크고 웃음이 예뻤습니다."}, {"start": 194, "end": 198, "text": "두 사람은 서로 좋아해서 결혼했고."}, {"start": 198, "end": 201, "text": "숲속 작은 집에서 행복하게 살았습니다."}, {"start": 201, "end": 204, "text": "그리고 어느 봄날."}, {"start": 204, "end": 207, "text": "아기 곰이 태어났습니다."}, {"start": 207, "end": 209, "text": "이름은 동이었습니다."}, {"start": 209, "end": 213, "text": "아기동이가 처음 걷기 시작한 날이었습니다."}, {"start": 213, "end": 215, "text": "뒤뚱뒤뚱."}, {"start": 215, "end": 218, "text": "발이 따로 놀고."}, {"start": 218, "end": 220, "text": "몸이 따로 놀고."}, {"start": 220, "end": 224, "text": "그러다가 풀밭에 엎어지기를 반복하는 날이었습니다."}, {"start": 224, "end": 229, "text": "그때 엄마 곰이 앞에서 걸어가면서 말했습니다."}, {"start": 229, "end": 232, "text": "동이야 엄마 꼬리 잡아봐."}, {"start": 232, "end": 236, "text": "아기동이가 엄마 꼬리를 두 손으로 꼭 잡았습니다."}, {"start": 236, "end": 239, "text": "엄마 꼬리는 폭신했습니다."}, {"start": 239, "end": 241, "text": "따뜻했습니다."}, {"start": 241, "end": 246, "text": "엄마가 한발 내디딜 때마다 꼬리가 살랑살랑 흔들렸고."}, {"start": 246, "end": 251, "text": "동이는 그 꼬리를 붙들고 한발 한발 따라갔습니다."}, {"start": 251, "end": 254, "text": "넘어지지 않았습니다."}, {"start": 254, "end": 257, "text": "엄마 꼬리를 잡고 있으면?"}, {"start": 257, "end": 259, "text": "넘어지지 않았습니다."}, {"start": 259, "end": 261, "text": "여러분."}, {"start": 261, "end": 264, "text": "어릴 때 엄마 손을 잡고 걷던 기억."}, {"start": 264, "end": 266, "text": "있으십니까?"}, {"start": 266, "end": 268, "text": "그 손이."}, {"start": 268, "end": 271, "text": "얼마나 컸는지?"}, {"start": 271, "end": 273, "text": "얼마나 따뜻했는지?"}, {"start": 273, "end": 276, "text": "잊으신 분들도 계실 겁니다."}, {"start": 276, "end": 279, "text": "잊을 만큼 오래 됐으니까요."}, {"start": 279, "end": 282, "text": "그래도 괜찮습니다."}, {"start": 282, "end": 285, "text": "오늘 이야기를 들으시다 보면."}, {"start": 285, "end": 288, "text": "다시 생각나실 겁니다."}, {"start": 288, "end": 291, "text": "자 계속하겠습니다."}, {"start": 291, "end": 295, "text": "두 번째 이야기 — 단이가 태어난 날."}, {"start": 295, "end": 298, "text": "그 아기동이가 다 자랐습니다."}, {"start": 298, "end": 300, "text": "결혼도 하고."}, {"start": 300, "end": 303, "text": "어엿한 아빠 곰이 됐습니다."}, {"start": 303, "end": 306, "text": "그리고 어느 봄날."}, {"start": 306, "end": 309, "text": "동이에게도 아기가 생겼습니다."}, {"start": 309, "end": 312, "text": "그 아기의 이름이 단이입니다."}, {"start": 312, "end": 315, "text": "단이가 태어나는 날이었습니다."}, {"start": 315, "end": 320, "text": "아빠 곰 동이는 분만실 앞에서 세 시간째 서성이고 있었습니다."}, {"start": 320, "end": 323, "text": "열 걸음 갔다가 돌아오고."}, {"start": 323, "end": 326, "text": "열 걸음 갔다가 돌아오고."}, {"start": 326, "end": 330, "text": "엄마 곰 봄이는 안에서 힘쓰고 있는데."}, {"start": 330, "end": 334, "text": "동이는 밖에서 발만 동동 구르고 있었습니다."}, {"start": 334, "end": 336, "text": "그때였습니다."}, {"start": 336, "end": 339, "text": "굴 안에서 소리가 났습니다."}, {"start": 339, "end": 341, "text": "앙앙."}, {"start": 341, "end": 344, "text": "작고 가늘고 힘찬 소리였습니다."}, {"start": 344, "end": 347, "text": "동이가 그 소리를 들은 순간."}, {"start": 347, "end": 350, "text": "눈에서 뭔가가 흘렀습니다."}, {"start": 350, "end": 354, "text": "눈물인지 확인하려고 손으로 만져봤습니다."}, {"start": 354, "end": 357, "text": "눈물이 맞았습니다."}, {"start": 357, "end": 360, "text": "동이가 소리를 질렀습니다."}, {"start": 360, "end": 361, "text": "아기야!"}, {"start": 361, "end": 363, "text": "내 아기야!"}, {"start": 363, "end": 366, "text": "그러다가 기뻐서 달렸습니다."}, {"start": 366, "end": 370, "text": "앞에 있는 큰 나무 쪽으로 달렸습니다."}, {"start": 370, "end": 373, "text": "그리고 너무 기쁜 나머지?"}, {"start": 373, "end": 377, "text": "나무에 이마를 쿵 박았습니다."}, {"start": 377, "end": 380, "text": "여러분, 이런 분 계십니까?"}, {"start": 380, "end": 383, "text": "기뻐서 어쩔 줄 모르는 분."}, {"start": 383, "end": 385, "text": "아이가 태어날 때."}, {"start": 385, "end": 388, "text": "손자 손녀가 태어날 때."}, {"start": 388, "end": 391, "text": "그 기쁨이 어떤 것인지?"}, {"start": 391, "end": 394, "text": "아시는 분들은 아실 겁니다."}, {"start": 394, "end": 397, "text": "이마를 박을 만큼 기쁜 것."}, {"start": 397, "end": 401, "text": "동이가 겨우 굴 안으로 들어갔을 때."}, {"start": 401, "end": 404, "text": "엄마 곰 봄이는 침대에 누워 있었습니다."}, {"start": 404, "end": 409, "text": "그리고 봄이 품에 아주 작은 것이 있었습니다."}, {"start": 409, "end": 412, "text": "검은 털이 복실복실한."}, {"start": 412, "end": 415, "text": "아주 작은 곰 아기였습니다."}, {"start": 415, "end": 417, "text": "눈을 꼭 감은 채로."}, {"start": 417, "end": 421, "text": "봄이 품에 바짝 붙어 있었습니다."}, {"start": 421, "end": 423, "text": "코가 조금 뭉툭했고."}, {"start": 423, "end": 425, "text": "귀가 작았고."}, {"start": 425, "end": 428, "text": "손이 아주 작았습니다."}, {"start": 428, "end": 431, "text": "동이가 그 아기를 보는 순간."}, {"start": 431, "end": 434, "text": "아무 말도 못했습니다."}, {"start": 434, "end": 436, "text": "아무 말도."}, {"start": 436, "end": 439, "text": "그냥 서 있었습니다."}, {"start": 439, "end": 442, "text": "봄이가 힘없는 목소리로 말했습니다."}, {"start": 442, "end": 445, "text": "동이야 와봐."}, {"start": 445, "end": 448, "text": "동이가 천천히 걸어갔습니다."}, {"start": 448, "end": 451, "text": "아기 옆에 무릎을 꿇었습니다."}, {"start": 451, "end": 454, "text": "아기의 작은 손이 보였습니다."}, {"start": 454, "end": 457, "text": "손가락이 다섯 개 있었습니다."}, {"start": 457, "end": 461, "text": "아주 작은 손가락이 다섯 개."}, {"start": 461, "end": 464, "text": "동이가 손가락 하나를 내밀었습니다."}, {"start": 464, "end": 468, "text": "아기가 반사적으로 그 손가락을 잡았습니다."}, {"start": 468, "end": 470, "text": "작은 손으로."}, {"start": 470, "end": 472, "text": "꼭 잡았습니다."}, {"start": 472, "end": 476, "text": "동이의 눈에서 눈물이 떨어졌습니다."}, {"start": 476, "end": 478, "text": "봄이가 물었습니다."}, {"start": 478, "end": 480, "text": "이름 뭐로 할 거야?"}, {"start": 480, "end": 484, "text": "동이가 한참 아기를 바라보다가 말했습니다."}, {"start": 484, "end": 486, "text": "단이."}, {"start": 486, "end": 488, "text": "단이."}, {"start": 488, "end": 490, "text": "응 단이."}, {"start": 490, "end": 492, "text": "달다는 뜻이야?"}, {"start": 492, "end": 496, "text": "이 아이가 우리 인생에서 제일 달콤한 것이니까."}, {"start": 496, "end": 499, "text": "봄이가 웃었습니다."}, {"start": 499, "end": 502, "text": "웃다가 눈물이 났습니다."}, {"start": 502, "end": 506, "text": "그때 굴 밖에서 쿵 하는 소리가 들렸습니다."}, {"start": 506, "end": 508, "text": "나가보니."}, {"start": 508, "end": 512, "text": "할머니 곰이 굴 입구에서 기절해 있었습니다."}, {"start": 512, "end": 516, "text": "달려오다가 너무 흥분해서 쓰러진 것이었습니다."}, {"start": 516, "end": 520, "text": "손에는 꿀 항아리를 꼭 쥐고 있었습니다."}, {"start": 520, "end": 524, "text": "기절하면서도 항아리는 놓지 않았습니다."}, {"start": 524, "end": 525, "text": "여러분."}, {"start": 525, "end": 529, "text": "손자 손녀 처음 봤을 때 생각나십니까?"}, {"start": 529, "end": 532, "text": "그때 그 기분이."}, {"start": 532, "end": 534, "text": "어떠셨습니까?"}, {"start": 534, "end": 539, "text": "할머니 곰이 눈을 떴습니다."}, {"start": 539, "end": 541, "text": "단이 어딨어?"}, {"start": 541, "end": 543, "text": "할머니 왔다."}, {"start": 543, "end": 546, "text": "할아버지 곰도 들어왔습니다."}, {"start": 546, "end": 549, "text": "숨이 많이 찼습니다."}, {"start": 549, "end": 552, "text": "무릎도 좋지 않은데 달려온 것이었습니다."}, {"start": 552, "end": 554, "text": "응."}, {"start": 554, "end": 556, "text": "단이 어딨어?"}, {"start": 556, "end": 558, "text": "내가 할아버지야?"}, {"start": 558, "end": 562, "text": "할아버지 곰은 귀가 좀 어두웠습니다."}, {"start": 562, "end": 565, "text": "항상 크게 말씀하셨습니다."}, {"start": 565, "end": 570, "text": "봄이가 단이를 할아버지 곰 쪽으로 살짝 들어 올렸습니다."}, {"start": 570, "end": 573, "text": "할아버지 곰이 단이를 봤습니다."}, {"start": 573, "end": 577, "text": "그 순간 할아버지 곰이 조용해졌습니다."}, {"start": 577, "end": 579, "text": "아주 오랫동안."}, {"start": 579, "end": 582, "text": "아무 말도 하지 않고."}, {"start": 582, "end": 585, "text": "단이를 바라봤습니다."}, {"start": 585, "end": 587, "text": "귀가 어두운 할아버지가."}, {"start": 587, "end": 591, "text": "입이 잘 다물어지지 않는 할아버지가."}, {"start": 591, "end": 594, "text": "그냥 서서 단이를 바라봤습니다."}, {"start": 594, "end": 600, "text": "그러다가 아주 작은 목소리로 말했습니다."}, {"start": 600, "end": 602, "text": "할아버지 곰의 목소리가."}, {"start": 602, "end": 605, "text": "처음으로 작아졌습니다."}, {"start": 605, "end": 608, "text": "봄이가 나중에 말했습니다."}, {"start": 608, "end": 612, "text": "그날 할아버지 목소리가 그렇게 작은 것."}, {"start": 612, "end": 614, "text": "처음 들었어"}, {"start": 614, "end": 616, "text": "여러분."}, {"start": 616, "end": 618, "text": "손자 손녀 처음 봤을 때."}, {"start": 618, "end": 622, "text": "목소리가 작아지셨습니까?"}, {"start": 622, "end": 625, "text": "아니면 눈물이 나셨습니까?"}, {"start": 625, "end": 627, "text": "그게 사랑이라는 겁니다."}, {"start": 627, "end": 630, "text": "말로 하지 않아도 나오는 것."}, {"start": 630, "end": 633, "text": "그게 사랑입니다."}, {"start": 633, "end": 637, "text": "세 번째 이야기 — 엄마 곰이 하는 일들."}, {"start": 637, "end": 640, "text": "단이가 자라기 시작했습니다."}, {"start": 640, "end": 643, "text": "그리고 단이가 잘하는 만큼."}, {"start": 643, "end": 648, "text": "엄마 곰 봄이와 아빠 곰 동이가 하는 일도 많아졌습니다."}, {"start": 648, "end": 652, "text": "엄마 곰 봄이가 매일 하는 일을 한번 따라가 보겠습니다."}, {"start": 652, "end": 655, "text": "새벽 네 시."}, {"start": 655, "end": 657, "text": "봄이가 일어납니다."}, {"start": 657, "end": 660, "text": "단이는 자고 있습니다."}, {"start": 660, "end": 662, "text": "동이도 자고 있습니다."}, {"start": 662, "end": 665, "text": "온 숲이 자고 있습니다."}, {"start": 665, "end": 669, "text": "심지어 새들도 아직 일어나지 않았습니다."}, {"start": 669, "end": 673, "text": "봄이 혼자 일어나 부엌으로 갑니다."}, {"start": 673, "end": 675, "text": "불을 지핍니다."}, {"start": 675, "end": 679, "text": "단이가 요즘 개암나무 열매를 좋아합니다."}, {"start": 679, "end": 682, "text": "어제 숲에서 따온 것을 볶습니다."}, {"start": 682, "end": 685, "text": "단이가 제일 좋아하는 방식으로."}, {"start": 685, "end": 688, "text": "조금 달달하게."}, {"start": 688, "end": 691, "text": "그리고 꿀을 한 숟가락 더 넣습니다."}, {"start": 691, "end": 694, "text": "단이가 꿀을 좋아하니까."}, {"start": 694, "end": 697, "text": "아침밥상을 다 차릴 때쯤."}, {"start": 697, "end": 700, "text": "하늘이 조금 밝아옵니다."}, {"start": 700, "end": 703, "text": "봄이가 창밖을 봅니다."}, {"start": 703, "end": 706, "text": "하늘이 분홍빛으로 물들고 있습니다."}, {"start": 706, "end": 710, "text": "봄이가 혼자 중얼거립니다."}, {"start": 710, "end": 713, "text": "오늘도 잘 먹어야 한다."}, {"start": 713, "end": 716, "text": "단이는 자고 있어서 듣지 못합니다."}, {"start": 716, "end": 719, "text": "봄이는 괜찮습니다."}, {"start": 719, "end": 722, "text": "들으라고 한 말이 아니니까요."}, {"start": 722, "end": 724, "text": "여러분."}, {"start": 724, "end": 727, "text": "이런 새벽이 있으셨습니까?"}, {"start": 727, "end": 729, "text": "아무도 몰래?"}, {"start": 729, "end": 731, "text": "아무도 시키지 않아도."}, {"start": 731, "end": 734, "text": "혼자 일어나신 새벽이."}, {"start": 734, "end": 738, "text": "그 새벽을 아시는 분들은 아실 겁니다."}, {"start": 738, "end": 741, "text": "그게 엄마라는 것을."}, {"start": 741, "end": 743, "text": "아침 일곱 시."}, {"start": 743, "end": 745, "text": "단이가 일어납니다."}, {"start": 745, "end": 749, "text": "봄이가 물었습니다."}, {"start": 749, "end": 751, "text": "잘 잤어?"}, {"start": 751, "end": 752, "text": "응."}, {"start": 752, "end": 754, "text": "밥먹자."}, {"start": 754, "end": 757, "text": "단이가 밥상 앞에 앉습니다."}, {"start": 757, "end": 760, "text": "개암 열매 볶은 것을 봅니다."}, {"start": 760, "end": 763, "text": "꿀이 들어간 것을 봅니다."}, {"start": 763, "end": 765, "text": "오늘 이거야."}, {"start": 765, "end": 769, "text": "응, 어제 내가 좋아한다고 해서."}, {"start": 769, "end": 770, "text": "도."}, {"start": 770, "end": 772, "text": "봄이가 웃습니다."}, {"start": 772, "end": 775, "text": "싫으면 안 먹어도 돼?"}, {"start": 775, "end": 777, "text": "단이가 먹습니다."}, {"start": 777, "end": 780, "text": "맛있게 먹습니다."}, {"start": 780, "end": 782, "text": "그릇을 싹 비웁니다."}, {"start": 782, "end": 787, "text": "봄이는 단이가 먹는 것을 보면서 밥을 먹습니다."}, {"start": 787, "end": 790, "text": "사실 봄이 밥은 항상 남습니다."}, {"start": 790, "end": 795, "text": "단이 것을 챙기다 보면 자기 것은 잊어 버립니다."}, {"start": 795, "end": 798, "text": "식어버린 밥을 나중에 후딱 먹습니다."}, {"start": 798, "end": 800, "text": "여러분."}, {"start": 800, "end": 804, "text": "자식꺼 챙기다가 자기 밥 식어서 드신적."}, {"start": 804, "end": 806, "text": "있으십니까?"}, {"start": 806, "end": 809, "text": "그게 한두 번이 아니셨을 겁니다."}, {"start": 809, "end": 812, "text": "그 식은 밥이?"}, {"start": 812, "end": 816, "text": "사실은 세상에서 제일 따뜻한 밥이었습니다."}, {"start": 816, "end": 819, "text": "사랑으로 데워진 밥이었으니까요."}, {"start": 819, "end": 822, "text": "봄이가 하는 일 또 하나."}, {"start": 822, "end": 825, "text": "단이가 아플 때입니다."}, {"start": 825, "end": 828, "text": "단이가 열이 나던 날이었습니다."}, {"start": 828, "end": 832, "text": "봄이가 단이 이마에 손을 얹었습니다."}, {"start": 832, "end": 834, "text": "뜨거웠습니다."}, {"start": 834, "end": 837, "text": "봄이가 그 날 밤 한숨도 자지 못했습니다."}, {"start": 837, "end": 842, "text": "두 시간마다 일어나서 단이 이마를 만졌습니다."}, {"start": 842, "end": 845, "text": "열이 내렸는지 확인했습니다."}, {"start": 845, "end": 848, "text": "찬 물수건을 갈아줬습니다."}, {"start": 848, "end": 852, "text": "아빠 동이가 새벽에 눈을 비비며 물었습니다."}, {"start": 852, "end": 853, "text": "봄이야."}, {"start": 853, "end": 855, "text": "언제 잤어?"}, {"start": 855, "end": 857, "text": "조금 잤어."}, {"start": 857, "end": 858, "text": "얼마나?"}, {"start": 858, "end": 860, "text": "조금."}, {"start": 860, "end": 863, "text": "동이가 봄이 손을 잡았습니다."}, {"start": 863, "end": 866, "text": "내가 이제 할게."}, {"start": 866, "end": 867, "text": "사."}, {"start": 867, "end": 869, "text": "괜찮아?"}, {"start": 869, "end": 872, "text": "단이가 깨면 엄마 찾을 수 있어?"}, {"start": 872, "end": 876, "text": "봄이가 정말 괜찮은지는 아무도 몰랐습니다."}, {"start": 876, "end": 881, "text": "단이는 다음날 아침 열이 내리고 말끔하게 일어났습니다."}, {"start": 881, "end": 884, "text": "그리고 밥을 달라고 했습니다."}, {"start": 884, "end": 888, "text": "봄이가 단이밥을 차리면서 웃었습니다."}, {"start": 888, "end": 891, "text": "그게 전부 보상이었습니다."}, {"start": 891, "end": 893, "text": "단이가 밥 달라고 하는 것."}, {"start": 893, "end": 895, "text": "여러분."}, {"start": 895, "end": 898, "text": "이런 밤이 있으셨습니까?"}, {"start": 898, "end": 902, "text": "자식 걱정에 밤새 눈을 못 부치신 밤이."}, {"start": 902, "end": 905, "text": "그런 밤이 몇 번이나 되십니까?"}, {"start": 905, "end": 907, "text": "셀 수 있으십니까?"}, {"start": 907, "end": 910, "text": "아마 셀 수가 없으실 겁니다."}, {"start": 910, "end": 914, "text": "그 밤들이 다 사랑이었습니다."}, {"start": 914, "end": 917, "text": "할머니 곰과 할아버지 곰도 있었습니다."}, {"start": 917, "end": 921, "text": "할머니 곰은 다리가 좋지 않았지만."}, {"start": 921, "end": 924, "text": "단이 보러 매일 왔습니다."}, {"start": 924, "end": 925, "text": "매일."}, {"start": 925, "end": 928, "text": "비가 와도 왔습니다."}, {"start": 928, "end": 930, "text": "눈이 와도 왔습니다."}, {"start": 930, "end": 934, "text": "한 번은 눈이 많이 온 날이었습니다."}, {"start": 934, "end": 937, "text": "봄이가 할머니한테 전화했습니다."}, {"start": 937, "end": 940, "text": "어머니, 오늘은 오지 마세요."}, {"start": 940, "end": 943, "text": "눈이 많이 왔어요."}, {"start": 943, "end": 945, "text": "괜찮아?"}, {"start": 945, "end": 948, "text": "길이 미끄러우면 천천히 오면 되지?"}, {"start": 948, "end": 951, "text": "넘어지시면 어떻게 해요?"}, {"start": 951, "end": 953, "text": "안 넘어져."}, {"start": 953, "end": 956, "text": "나 아직 튼튼해."}, {"start": 956, "end": 959, "text": "그날 할머니 곰이 왔습니다."}, {"start": 959, "end": 961, "text": "손에 꿀 항아리를 들고."}, {"start": 961, "end": 965, "text": "중간에 한 번 미끄러졌지만."}, {"start": 965, "end": 967, "text": "항아리는 놓지 않았습니다."}, {"start": 967, "end": 970, "text": "무릎을 다치면서도."}, {"start": 970, "end": 973, "text": "항아리를 들고 일어났습니다."}, {"start": 973, "end": 977, "text": "봄이가 할머니 무릎을 보고 소리쳤습니다."}, {"start": 977, "end": 980, "text": "어머니 무릎이 왜 이래요?"}, {"start": 980, "end": 981, "text": "괜찮아?"}, {"start": 981, "end": 983, "text": "괜찮아?"}, {"start": 983, "end": 985, "text": "단이 어딨어?"}, {"start": 985, "end": 989, "text": "단이는 지금 할머니 무릎보다 중요하지 않아요."}, {"start": 989, "end": 991, "text": "뭔 소리야?"}, {"start": 991, "end": 994, "text": "단이가 제일 중요하지."}, {"start": 994, "end": 998, "text": "할머니 곰이 단이를 찾아 방으로 갔습니다."}, {"start": 998, "end": 1001, "text": "무릎을 절룩거리면서."}, {"start": 1001, "end": 1004, "text": "봄이가 그 뒷모습을 보면서."}, {"start": 1004, "end": 1007, "text": "한참 동안 말을 못했습니다."}, {"start": 1007, "end": 1009, "text": "여러분."}, {"start": 1009, "end": 1011, "text": "이런 어머니."}, {"start": 1011, "end": 1013, "text": "이런 할머니."}, {"start": 1013, "end": 1015, "text": "계셨습니까?"}, {"start": 1015, "end": 1017, "text": "아니면?"}, {"start": 1017, "end": 1019, "text": "여러분이 그런 어머니."}, {"start": 1019, "end": 1022, "text": "그런 할머니이십니까?"}, {"start": 1022, "end": 1025, "text": "눈길을 걷고 오셨습니까?"}, {"start": 1025, "end": 1028, "text": "무릎이 아파도 가셨습니까?"}, {"start": 1028, "end": 1030, "text": "그게 할머니라는 겁니다."}, {"start": 1030, "end": 1034, "text": "할아버지 곰에게는 보청기가 있었습니다."}, {"start": 1034, "end": 1038, "text": "그런데 보청기를 자꾸 잃어버렸습니다."}, {"start": 1038, "end": 1041, "text": "어디 두었는지 기억을 못했습니다."}, {"start": 1041, "end": 1045, "text": "온 집안을 다 뒤집어도 없었습니다."}, {"start": 1045, "end": 1049, "text": "어느 날 할머니 곰이 부엌에서 발견했습니다."}, {"start": 1049, "end": 1052, "text": "꿀 항아리 안에 들어가 있었습니다."}, {"start": 1052, "end": 1053, "text": "여보."}, {"start": 1053, "end": 1056, "text": "보청기가 왜 꿀 항아리 안에 있어?"}, {"start": 1056, "end": 1058, "text": "응."}, {"start": 1058, "end": 1060, "text": "뭐라고?"}, {"start": 1060, "end": 1063, "text": "보청기가 왜 꿀 항아리 안에 있냐고요?"}, {"start": 1063, "end": 1065, "text": "응."}, {"start": 1065, "end": 1066, "text": "응."}, {"start": 1066, "end": 1068, "text": "꿀이 맛있지?"}, {"start": 1068, "end": 1071, "text": "할머니 곰이 한숨을 쉬었습니다."}, {"start": 1071, "end": 1076, "text": "그런데 단이가 그 장면을 보고 깔깔 웃었습니다."}, {"start": 1076, "end": 1080, "text": "할아버지 곰이 단이 웃음소리를 들었습니다."}, {"start": 1080, "end": 1083, "text": "귀가 잘 안 들리는 할아버지가?"}, {"start": 1083, "end": 1086, "text": "단이 웃음소리는 들었습니다."}, {"start": 1086, "end": 1089, "text": "그리고 같이 웃었습니다."}, {"start": 1089, "end": 1092, "text": "아무것도 못 들어도."}, {"start": 1092, "end": 1095, "text": "손주 웃음소리는 들렸습니다."}, {"start": 1095, "end": 1098, "text": "할머니 곰이 나중에 말했습니다."}, {"start": 1098, "end": 1100, "text": "사랑하면 들려?"}, {"start": 1100, "end": 1102, "text": "귀가 나빠도."}, {"start": 1102, "end": 1104, "text": "여러분."}, {"start": 1104, "end": 1107, "text": "이 말이 맞습니까?"}, {"start": 1107, "end": 1109, "text": "사랑하면 들립니까?"}, {"start": 1109, "end": 1112, "text": "저는 맞는다고 생각합니다."}, {"start": 1112, "end": 1115, "text": "이렇게 단이는 자랐습니다."}, {"start": 1115, "end": 1120, "text": "매일 아침 봄이가 일찍 일어나 차려주는 밥을 먹으면서."}, {"start": 1120, "end": 1124, "text": "매일 밤 동이가 불러주는 자장가를 들으면서."}, {"start": 1124, "end": 1129, "text": "눈이 오는 날도 꿀 항아리를 들고 오는 할머니 품에 안기면서."}, {"start": 1129, "end": 1134, "text": "꿀 항아리에 보청기를 넣어 두는 할아버지의 웃음소리를 들으면서."}, {"start": 1134, "end": 1137, "text": "단이는 자랐습니다."}, {"start": 1137, "end": 1140, "text": "그런데 단이는 알지 못했습니다."}, {"start": 1140, "end": 1144, "text": "새벽 네 시에 봄이가 일어나는 것을."}, {"start": 1144, "end": 1148, "text": "단이가 아플 때 봄이가 밤새 한숨도 자지 못하는 것을."}, {"start": 1148, "end": 1154, "text": "눈길에서 할머니 곰이 넘어지면서도 항아리를 놓지 않는 것을."}, {"start": 1154, "end": 1157, "text": "아이들은 원래 모릅니다."}, {"start": 1157, "end": 1161, "text": "받는 것이 당연하다고 생각하는 시절이 있습니다."}, {"start": 1161, "end": 1163, "text": "모두 그렇습니다."}, {"start": 1163, "end": 1166, "text": "그게 잘못된 것이 아닙니다."}, {"start": 1166, "end": 1169, "text": "그냥 아직 어린 것입니다."}, {"start": 1169, "end": 1172, "text": "그리고 그 시절이 지나면."}, {"start": 1172, "end": 1175, "text": "언젠가는 알게 됩니다."}, {"start": 1175, "end": 1179, "text": "새벽 네 시에 엄마가 일어났다는 것을."}, {"start": 1179, "end": 1183, "text": "네 번째 이야기 — 갑자기 부모가 창피해지는 나이."}, {"start": 1183, "end": 1187, "text": "단이가 자라서 청소년이 됐습니다."}, {"start": 1187, "end": 1191, "text": "어느 날 갑자기 모든 것이 창피해지는 나이입니다."}, {"start": 1191, "end": 1193, "text": "부모가 창피하고."}, {"start": 1193, "end": 1196, "text": "할머니, 할아버지가 창피하고."}, {"start": 1196, "end": 1199, "text": "우리 집이 창피하고."}, {"start": 1199, "end": 1202, "text": "우리 집 꿀 항아리가 창피한 나이."}, {"start": 1202, "end": 1206, "text": "여러분도 그런 때가 있으셨습니까?"}, {"start": 1206, "end": 1208, "text": "그런 때가 있으셨다면."}, {"start": 1208, "end": 1212, "text": "지금 생각하면 어떠십니까?"}, {"start": 1212, "end": 1214, "text": "처음 그 신호가 온 것은?"}, {"start": 1214, "end": 1218, "text": "단이가 학교 운동회 날이었습니다."}, {"start": 1218, "end": 1222, "text": "봄이가 도시락을 잔뜩 사서 운동장에 왔습니다."}, {"start": 1222, "end": 1224, "text": "개암 열매 볶은 것?"}, {"start": 1224, "end": 1225, "text": "꿀, 샌드위치."}, {"start": 1225, "end": 1227, "text": "열매 주스."}, {"start": 1227, "end": 1228, "text": "꿀 케이크."}, {"start": 1228, "end": 1234, "text": "봄이가 큰 바구니를 들고 운동장으로 들어오면서 손을 흔들었습니다."}, {"start": 1234, "end": 1236, "text": "단이야?"}, {"start": 1236, "end": 1237, "text": "엄마 왔어?"}, {"start": 1237, "end": 1241, "text": "단이가 친구들이랑 있다가 봄이를 봤습니다."}, {"start": 1241, "end": 1245, "text": "그 순간 단이 얼굴이 굳었습니다."}, {"start": 1245, "end": 1248, "text": "단이가 재빨리 친구 뒤로 숨었습니다."}, {"start": 1248, "end": 1254, "text": "봄이가 단이를 찾다가 결국 발견했습니다."}, {"start": 1254, "end": 1256, "text": "여기 있었네."}, {"start": 1256, "end": 1259, "text": "엄마가 도시락 싸왔어?"}, {"start": 1259, "end": 1262, "text": "단이 얼굴이 빨개졌습니다."}, {"start": 1262, "end": 1265, "text": "엄마 그냥 저기 앉아?"}, {"start": 1265, "end": 1267, "text": "응."}, {"start": 1267, "end": 1269, "text": "같이 먹자."}, {"start": 1269, "end": 1270, "text": "엄마."}, {"start": 1270, "end": 1272, "text": "저기 앉으라고?"}, {"start": 1272, "end": 1275, "text": "봄이가 단이 표정을 봤습니다."}, {"start": 1275, "end": 1277, "text": "알겠어?"}, {"start": 1277, "end": 1281, "text": "봄이가 조용히 운동장 구석으로 갔습니다."}, {"start": 1281, "end": 1284, "text": "혼자 바구니를 내려놓고 앉았습니다."}, {"start": 1284, "end": 1288, "text": "그리고 단이가 달리기하는 것을 바라봤습니다."}, {"start": 1288, "end": 1292, "text": "단이는 뒤돌아보지 않았습니다."}, {"start": 1292, "end": 1294, "text": "봄이는 괜찮았습니다."}, {"start": 1294, "end": 1298, "text": "아니, 사실은 조금 속이 상했습니다."}, {"start": 1298, "end": 1301, "text": "그래도 괜찮은 척했습니다."}, {"start": 1301, "end": 1303, "text": "그게 엄마니까?"}, {"start": 1303, "end": 1305, "text": "여러분."}, {"start": 1305, "end": 1308, "text": "이런 일을 겪으신 분 계십니까?"}, {"start": 1308, "end": 1312, "text": "자식한테 구석으로 가라는 말을 들으신 분."}, {"start": 1312, "end": 1316, "text": "그때 마음이 어떠셨습니까?"}, {"start": 1316, "end": 1319, "text": "그래도 괜찮은 척하셨습니까?"}, {"start": 1319, "end": 1323, "text": "봄이가 구석에 앉아서 단이 달리기를 보면서."}, {"start": 1323, "end": 1325, "text": "혼자 응원했습니다."}, {"start": 1325, "end": 1328, "text": "소리는 내지 않았습니다."}, {"start": 1328, "end": 1331, "text": "구석에서 조용히 응원했습니다."}, {"start": 1331, "end": 1334, "text": "그게 엄마입니다."}, {"start": 1334, "end": 1338, "text": "그 다음 주에는 할머니 곰이 학교 앞에 왔습니다."}, {"start": 1338, "end": 1341, "text": "꿀 항아리를 두 개나 들고."}, {"start": 1341, "end": 1344, "text": "도토리 과자 봉지를 들고."}, {"start": 1344, "end": 1346, "text": "빨간 두 권을 쓰고."}, {"start": 1346, "end": 1351, "text": "단이가 친구들이랑 나오다가 할머니를 받습니다."}, {"start": 1351, "end": 1353, "text": "얼굴이 굳었습니다."}, {"start": 1353, "end": 1357, "text": "그런데 단이 친구들은 달랐습니다."}, {"start": 1357, "end": 1359, "text": "어머 귀여우시다."}, {"start": 1359, "end": 1362, "text": "저 2권 봐봐."}, {"start": 1362, "end": 1363, "text": "어르신."}, {"start": 1363, "end": 1365, "text": "저 저것 주세요."}, {"start": 1365, "end": 1367, "text": "도토리 과자요."}, {"start": 1367, "end": 1372, "text": "할머니 곰이 가져온 것을 전부 단이 친구들한테 나눠줬습니다."}, {"start": 1372, "end": 1376, "text": "단이만 저만치 서서 보고 있었습니다."}, {"start": 1376, "end": 1380, "text": "집에 돌아오는 길의 단이가 할머니한테 말했습니다."}, {"start": 1380, "end": 1384, "text": "할머니, 학교 앞에 그렇게 오면 안 돼?"}, {"start": 1384, "end": 1385, "text": "창피하잖아."}, {"start": 1385, "end": 1389, "text": "할머니 곰이 잠깐 걸음을 멈췄습니다."}, {"start": 1389, "end": 1393, "text": "그러다가 다시 걷기 시작하면서 말했습니다."}, {"start": 1393, "end": 1395, "text": "그래, 알겠어?"}, {"start": 1395, "end": 1400, "text": "그날 집에 돌아와서 할머니 곰이 할아버지한테 말했습니다."}, {"start": 1400, "end": 1401, "text": "여보."}, {"start": 1401, "end": 1405, "text": "단이가 학교 앞에 오지 말래."}, {"start": 1405, "end": 1407, "text": "단이가 뭐라고?"}, {"start": 1407, "end": 1409, "text": "창피하데."}, {"start": 1409, "end": 1413, "text": "할아버지 곰이 한참 있다가 말했습니다."}, {"start": 1413, "end": 1415, "text": "우리도 그랬잖아."}, {"start": 1415, "end": 1418, "text": "다 그런 거지?"}, {"start": 1418, "end": 1421, "text": "할머니 곰이 고개를 끄덕였습니다."}, {"start": 1421, "end": 1423, "text": "그래도 괜찮아."}, {"start": 1423, "end": 1425, "text": "내 손주니까."}, {"start": 1425, "end": 1430, "text": "그 말 뒤에 할머니 곰이 혼자 창밖을 봤습니다."}, {"start": 1430, "end": 1433, "text": "이 장면을 단이는 보지 못했습니다."}, {"start": 1433, "end": 1435, "text": "여러분."}, {"start": 1435, "end": 1437, "text": "그래도 괜찮아."}, {"start": 1437, "end": 1439, "text": "내 손주니까?"}, {"start": 1439, "end": 1441, "text": "이 말?"}, {"start": 1441, "end": 1444, "text": "해보신 적 있으십니까?"}, {"start": 1444, "end": 1446, "text": "아무리 서운해도."}, {"start": 1446, "end": 1449, "text": "그래도 괜찮다고 하신 적."}, {"start": 1449, "end": 1452, "text": "그게 할머니라는 겁니다."}, {"start": 1452, "end": 1454, "text": "그게 부모라는 겁니다."}, {"start": 1454, "end": 1458, "text": "다섯 번째 이야기 — 단이가 떠나는 날."}, {"start": 1458, "end": 1461, "text": "단이가 대학에 가게 됐습니다."}, {"start": 1461, "end": 1465, "text": "다사랑 숲 밖에 있는 큰 도시로 가야 했습니다."}, {"start": 1465, "end": 1470, "text": "봄이가 짐을 싸기 시작한 것은 두 달 전이었습니다."}, {"start": 1470, "end": 1472, "text": "속옷은 열 장."}, {"start": 1472, "end": 1475, "text": "양말은 스무 켤레."}, {"start": 1475, "end": 1477, "text": "내복은 다섯 벌?"}, {"start": 1477, "end": 1480, "text": "비상약은 서른 가지."}, {"start": 1480, "end": 1483, "text": "단이가 짐 가방을 보고 물었습니다."}, {"start": 1483, "end": 1486, "text": "엄마 이게 다 뭐야?"}, {"start": 1486, "end": 1488, "text": "옷이야."}, {"start": 1488, "end": 1490, "text": "이렇게 많이?"}, {"start": 1490, "end": 1493, "text": "거기 빨래방 있는지 몰라서?"}, {"start": 1493, "end": 1496, "text": "엄마 빨래방은 어디나 있어?"}, {"start": 1496, "end": 1499, "text": "거기 있는지 모르잖아?"}, {"start": 1499, "end": 1501, "text": "여러분."}, {"start": 1501, "end": 1503, "text": "자식 떠나보낼 때."}, {"start": 1503, "end": 1507, "text": "짐 속에 이것저것 넣으셨습니까?"}, {"start": 1507, "end": 1512, "text": "빨래방 있는지 모른다고 속옷을 열 장 넣으셨습니까?"}, {"start": 1512, "end": 1514, "text": "그 마음이 뭔지 아십니까?"}, {"start": 1514, "end": 1518, "text": "그냥 뭐라도 더 챙겨주고 싶은 겁니다."}, {"start": 1518, "end": 1520, "text": "그게 다입니다."}, {"start": 1520, "end": 1523, "text": "떠나는 날 아침이었습니다."}, {"start": 1523, "end": 1527, "text": "봄이가 아침밥상을 차렸습니다."}, {"start": 1527, "end": 1530, "text": "단이가 좋아하는 것 전부였습니다."}, {"start": 1530, "end": 1531, "text": "엄마."}, {"start": 1531, "end": 1533, "text": "왜 이렇게 많이 했어?"}, {"start": 1533, "end": 1536, "text": "오늘 아침 많이 먹어야지."}, {"start": 1536, "end": 1538, "text": "왜?"}, {"start": 1538, "end": 1541, "text": "거기 가면 이런 것 없잖아?"}, {"start": 1541, "end": 1544, "text": "단이가 먹기 시작했습니다."}, {"start": 1544, "end": 1546, "text": "맛있게 먹었습니다."}, {"start": 1546, "end": 1550, "text": "봄이가 단이 먹는 것을 봤습니다."}, {"start": 1550, "end": 1553, "text": "오늘 봄이 밥은 처음부터 식어 있었습니다."}, {"start": 1553, "end": 1558, "text": "아까부터 밥을 뜨지 못하고 단이만 보고 있었거든요."}, {"start": 1558, "end": 1562, "text": "버스 정류장에 온 가족이 다 나왔습니다."}, {"start": 1562, "end": 1567, "text": "봄이, 동이, 할머니 곰, 할아버지 곰."}, {"start": 1567, "end": 1571, "text": "할머니 곰은 꿀 항아리를 들고 왔습니다."}, {"start": 1571, "end": 1573, "text": "이거 가져가."}, {"start": 1573, "end": 1576, "text": "할머니 이거 무거워?"}, {"start": 1576, "end": 1579, "text": "거기 가면 꿀 없잖아?"}, {"start": 1579, "end": 1581, "text": "편의점에 있어?"}, {"start": 1581, "end": 1584, "text": "그게 맛이 같아."}, {"start": 1584, "end": 1587, "text": "단이가 항아리를 받았습니다."}, {"start": 1587, "end": 1589, "text": "무거웠지만 받았습니다."}, {"start": 1589, "end": 1592, "text": "버스가 왔습니다."}, {"start": 1592, "end": 1594, "text": "단이가 짐을 들었습니다."}, {"start": 1594, "end": 1598, "text": "봄이가 단이를 한 번 안아줬습니다."}, {"start": 1598, "end": 1600, "text": "꽉 안아줬습니다."}, {"start": 1600, "end": 1603, "text": "단이도 봄이를 안았습니다."}, {"start": 1603, "end": 1605, "text": "한번만."}, {"start": 1605, "end": 1608, "text": "그리고 버스에 탔습니다."}, {"start": 1608, "end": 1611, "text": "동이가 손을 흔들었습니다."}, {"start": 1611, "end": 1614, "text": "밥 잘 먹어?"}, {"start": 1614, "end": 1616, "text": "잘 자."}, {"start": 1616, "end": 1618, "text": "아프지마."}, {"start": 1618, "end": 1620, "text": "전화 해."}, {"start": 1620, "end": 1622, "text": "힘들면 와?"}, {"start": 1622, "end": 1624, "text": "버스 문이 닫혔습니다."}, {"start": 1624, "end": 1627, "text": "단이가 창문 밖을 봤습니다."}, {"start": 1627, "end": 1630, "text": "네 사람이 서 있었습니다."}, {"start": 1630, "end": 1633, "text": "버스가 출발했습니다."}, {"start": 1633, "end": 1635, "text": "동이가 뛰어왔습니다."}, {"start": 1635, "end": 1638, "text": "버스를 따라 뛰었습니다."}, {"start": 1638, "end": 1642, "text": "한 200 미터를 뛰다가 멈췄습니다."}, {"start": 1642, "end": 1646, "text": "그리고 큰 소리로 외쳤습니다."}, {"start": 1646, "end": 1648, "text": "사랑해."}, {"start": 1648, "end": 1651, "text": "버스 안 사람들이 다 쳐다봤습니다."}, {"start": 1651, "end": 1655, "text": "단이 얼굴이 빨개졌습니다."}, {"start": 1655, "end": 1658, "text": "그런데 창문에 이마를 대고 뒤를 봤습니다."}, {"start": 1658, "end": 1662, "text": "아빠가 손을 흔들고 있었습니다."}, {"start": 1662, "end": 1663, "text": "엄마도."}, {"start": 1663, "end": 1665, "text": "할머니도."}, {"start": 1665, "end": 1667, "text": "할아버지도?"}, {"start": 1667, "end": 1670, "text": "버스가 모퉁이를 돌았습니다."}, {"start": 1670, "end": 1673, "text": "보이지 않게 됐습니다."}, {"start": 1673, "end": 1676, "text": "단이가 앞을 봤습니다."}, {"start": 1676, "end": 1679, "text": "눈이 조금 뜨거워졌습니다."}, {"start": 1679, "end": 1681, "text": "단이는 몰랐습니다."}, {"start": 1681, "end": 1684, "text": "버스가 완전히 사라지자."}, {"start": 1684, "end": 1688, "text": "봄이가 동이 손을 잡고 울기 시작한 것을."}, {"start": 1688, "end": 1691, "text": "동이도 운 것을."}, {"start": 1691, "end": 1696, "text": "할머니 곰이 꿀 항아리를 안고 서 있다가 혼자 중얼거린 것을."}, {"start": 1696, "end": 1697, "text": "잘 가라."}, {"start": 1697, "end": 1699, "text": "우리 단이야?"}, {"start": 1699, "end": 1702, "text": "할아버지 곰이 아무것도 못 들었지만."}, {"start": 1702, "end": 1705, "text": "눈물을 흘린 것을."}, {"start": 1705, "end": 1707, "text": "여러분."}, {"start": 1707, "end": 1710, "text": "자식 떠나보내신 날 기억하십니까?"}, {"start": 1710, "end": 1714, "text": "버스가 사라질 때까지 서 계셨습니까?"}, {"start": 1714, "end": 1717, "text": "그리고 집에 돌아와서."}, {"start": 1717, "end": 1720, "text": "자식 방문을 여셨습니까?"}, {"start": 1720, "end": 1724, "text": "봄이가 집에 돌아와서 단이 방문을 열었습니다."}, {"start": 1724, "end": 1727, "text": "그리고 한참 서 있었습니다."}, {"start": 1727, "end": 1730, "text": "침대가 있었습니다."}, {"start": 1730, "end": 1732, "text": "책상이 있었습니다."}, {"start": 1732, "end": 1735, "text": "단이 사진이 붙어 있었습니다."}, {"start": 1735, "end": 1738, "text": "봄이가 침대에 앉았습니다."}, {"start": 1738, "end": 1741, "text": "단이 베개를 들었습니다."}, {"start": 1741, "end": 1744, "text": "그리고 그냥 안고 있었습니다."}, {"start": 1744, "end": 1746, "text": "아무 소리 없이."}, {"start": 1746, "end": 1748, "text": "한참을."}, {"start": 1748, "end": 1750, "text": "여러분."}, {"start": 1750, "end": 1752, "text": "이 장면."}, {"start": 1752, "end": 1754, "text": "아십니까?"}, {"start": 1754, "end": 1757, "text": "아무 말도 필요없습니다."}, {"start": 1757, "end": 1760, "text": "아시는 분은 아실 겁니다."}, {"start": 1760, "end": 1763, "text": "여섯 번째 이야기 — 전화가 뜸해지는 계절."}, {"start": 1763, "end": 1767, "text": "처음에는 매일 전화가 왔습니다."}, {"start": 1767, "end": 1769, "text": "한 달이 지났습니다."}, {"start": 1769, "end": 1772, "text": "사흘에 한 번이 됐습니다."}, {"start": 1772, "end": 1775, "text": "봄이는 괜찮았습니다."}, {"start": 1775, "end": 1777, "text": "바쁜 거지?"}, {"start": 1777, "end": 1780, "text": "공부도 하고 친구도 사귀고."}, {"start": 1780, "end": 1782, "text": "석 달이 지났습니다."}, {"start": 1782, "end": 1785, "text": "일주일에 한 번이 됐습니다."}, {"start": 1785, "end": 1789, "text": "봄이는 여전히 괜찮다고 했습니다."}, {"start": 1789, "end": 1791, "text": "바쁜거야?"}, {"start": 1791, "end": 1793, "text": "대학생이 바쁘지?"}, {"start": 1793, "end": 1796, "text": "여섯 달이 지났습니다."}, {"start": 1796, "end": 1799, "text": "열흘에 한 번이 됐습니다."}, {"start": 1799, "end": 1802, "text": "봄이가 동이한테 물었습니다."}, {"start": 1802, "end": 1806, "text": "동이야 단이 요즘 바쁜 것 같지?"}, {"start": 1806, "end": 1808, "text": "응 바쁜가봐."}, {"start": 1808, "end": 1810, "text": "그렇지?"}, {"start": 1810, "end": 1812, "text": "바쁜 거지?"}, {"start": 1812, "end": 1814, "text": "그렇겠지?"}, {"start": 1814, "end": 1817, "text": "봄이가 잠깐 있다가 말했습니다."}, {"start": 1817, "end": 1820, "text": "나 단이한테 전화해도 돼?"}, {"start": 1820, "end": 1823, "text": "동이가 봄이를 봤습니다."}, {"start": 1823, "end": 1826, "text": "해도 될 왜 허락받아?"}, {"start": 1826, "end": 1828, "text": "방해될까봐."}, {"start": 1828, "end": 1831, "text": "봄이가 전화를 들었습니다."}, {"start": 1831, "end": 1834, "text": "단이 전화를 눌렀습니다."}, {"start": 1834, "end": 1836, "text": "신호가 같습니다."}, {"start": 1836, "end": 1838, "text": "3번."}, {"start": 1838, "end": 1840, "text": "받지 않았습니다."}, {"start": 1840, "end": 1843, "text": "봄이가 전화를 내려놓았습니다."}, {"start": 1843, "end": 1845, "text": "바쁜가봐."}, {"start": 1845, "end": 1847, "text": "여러분."}, {"start": 1847, "end": 1849, "text": "자식한테 전화하면서."}, {"start": 1849, "end": 1854, "text": "방해될까봐 바쁠까봐 망설이신 적 있으십니까?"}, {"start": 1854, "end": 1859, "text": "엄마가 자식한테 전화하는 게 방해가 되면 안 되는데?"}, {"start": 1859, "end": 1862, "text": "그런데도 망설이셨습니까?"}, {"start": 1862, "end": 1866, "text": "저녁이 돼서 단이한테서 문자가 왔습니다."}, {"start": 1866, "end": 1869, "text": "엄마 전화했어?"}, {"start": 1869, "end": 1871, "text": "수업 중이었어."}, {"start": 1871, "end": 1873, "text": "봄이가 답장했습니다."}, {"start": 1873, "end": 1875, "text": "괜찮아?"}, {"start": 1875, "end": 1878, "text": "아무것도 아니야."}, {"start": 1878, "end": 1881, "text": "밥 먹었어?"}, {"start": 1881, "end": 1884, "text": "봄이가 핸드폰을 내려놓았습니다."}, {"start": 1884, "end": 1888, "text": "저녁밥상에서 아무말 없이 밥을 먹었습니다."}, {"start": 1888, "end": 1893, "text": "동이가 봄이 밥 먹다가 잠깐 멈추는 것을 봤습니다."}, {"start": 1893, "end": 1894, "text": "봄이야."}, {"start": 1894, "end": 1896, "text": "괜찮아?"}, {"start": 1896, "end": 1898, "text": "응, 괜찮아."}, {"start": 1898, "end": 1901, "text": "봄이가 밥을 먹었습니다."}, {"start": 1901, "end": 1904, "text": "맛있는지 모르겠지만 먹었습니다."}, {"start": 1904, "end": 1907, "text": "명절이었습니다."}, {"start": 1907, "end": 1910, "text": "단이한테서 연락이 왔습니다."}, {"start": 1910, "end": 1914, "text": "엄마 나 이번 명절에 못 갈 것 같아?"}, {"start": 1914, "end": 1916, "text": "과제가 많아서?"}, {"start": 1916, "end": 1919, "text": "봄이가 답장을 썼습니다."}, {"start": 1919, "end": 1921, "text": "그래, 알겠어?"}, {"start": 1921, "end": 1923, "text": "밥은 먹어?"}, {"start": 1923, "end": 1927, "text": "그리고 전화를 내려놓았습니다."}, {"start": 1927, "end": 1931, "text": "봄이가 명절 음식 준비를 멈추지 않았습니다."}, {"start": 1931, "end": 1934, "text": "단이가 안 온다고 해도 준비했습니다."}, {"start": 1934, "end": 1937, "text": "단이 좋아하는 것들을."}, {"start": 1937, "end": 1939, "text": "동이가 물었습니다."}, {"start": 1939, "end": 1943, "text": "단이 안 오는데 왜 이렇게 해?"}, {"start": 1943, "end": 1945, "text": "혹시 올 수도 있잖아?"}, {"start": 1945, "end": 1948, "text": "못 온다고 했잖아?"}, {"start": 1948, "end": 1949, "text": "그래도."}, {"start": 1949, "end": 1952, "text": "봄이가 계속 만들었습니다."}, {"start": 1952, "end": 1955, "text": "단이는 오지 않았습니다."}, {"start": 1955, "end": 1959, "text": "봄이가 만든 음식은 동이와 둘이 먹었습니다."}, {"start": 1959, "end": 1963, "text": "단이 몫은 그냥 남겼습니다."}, {"start": 1963, "end": 1965, "text": "나중에 오면 줘야지."}, {"start": 1965, "end": 1967, "text": "여러분."}, {"start": 1967, "end": 1970, "text": "이런 일 있으셨습니까?"}, {"start": 1970, "end": 1973, "text": "오지 않는 자식 몫을 차려 두신 적."}, {"start": 1973, "end": 1977, "text": "혹시 올 수도 있잖아라고 하신 적."}, {"start": 1977, "end": 1979, "text": "그 마음이."}, {"start": 1979, "end": 1982, "text": "얼마나 크고 깊은 마음인지?"}, {"start": 1982, "end": 1985, "text": "자식들은 모릅니다."}, {"start": 1985, "end": 1987, "text": "아직 모릅니다."}, {"start": 1987, "end": 1991, "text": "할머니 곰에게는 더 힘든 일 이 있었습니다."}, {"start": 1991, "end": 1994, "text": "할머니 곰은 단이가 떠난 뒤로."}, {"start": 1994, "end": 1998, "text": "꿀 항아리를 모으기 시작했습니다."}, {"start": 1998, "end": 2001, "text": "매 장날마다 하나씩 사 왔습니다."}, {"start": 2001, "end": 2004, "text": "항아리가 쌓였습니다."}, {"start": 2004, "end": 2005, "text": "10개."}, {"start": 2005, "end": 2006, "text": "20개."}, {"start": 2006, "end": 2007, "text": "30개."}, {"start": 2007, "end": 2010, "text": "할아버지 곰이 물었습니다."}, {"start": 2010, "end": 2013, "text": "이게 왜 이렇게 많아?"}, {"start": 2013, "end": 2016, "text": "단이 오면 줄 거야?"}, {"start": 2016, "end": 2017, "text": "언제와?"}, {"start": 2017, "end": 2019, "text": "몰라?"}, {"start": 2019, "end": 2021, "text": "오면 주면 되지?"}, {"start": 2021, "end": 2025, "text": "한 달이 지나도 단이가 오지 않았습니다."}, {"start": 2025, "end": 2028, "text": "두 달이 지나도 오지 않았습니다."}, {"start": 2028, "end": 2032, "text": "할머니 곰은 항아리를 닦았습니다."}, {"start": 2032, "end": 2035, "text": "먼지가 앉으면 닦았습니다."}, {"start": 2035, "end": 2038, "text": "닦으면서 중얼거렸습니다."}, {"start": 2038, "end": 2041, "text": "단이 오면 이것도 줘야 하는데?"}, {"start": 2041, "end": 2044, "text": "저것도 줘야 하는데."}, {"start": 2044, "end": 2045, "text": "여러분."}, {"start": 2045, "end": 2050, "text": "손자 손녀 오면 주려고 뭔가 모아 두신 적 있으십니까?"}, {"start": 2050, "end": 2053, "text": "언제 올지 모르는데?"}, {"start": 2053, "end": 2055, "text": "그래도 모아 두신 적."}, {"start": 2055, "end": 2058, "text": "그게 할머니 마음입니다."}, {"start": 2058, "end": 2063, "text": "그리고 다사랑 숲 한쪽에는 거북이 할아버지가 있었습니다."}, {"start": 2063, "end": 2066, "text": "거북이 할아버지는 혼자 살았습니다."}, {"start": 2066, "end": 2069, "text": "아들이 있었습니다."}, {"start": 2069, "end": 2073, "text": "다사랑 숲을 떠나서 먼 곳으로 간 아들이었습니다."}, {"start": 2073, "end": 2076, "text": "처음에는 가끔 연락이 왔습니다."}, {"start": 2076, "end": 2080, "text": "그러다가 점점 뜸해졌습니다."}, {"start": 2080, "end": 2083, "text": "그러다가 연락이 끊겼습니다."}, {"start": 2083, "end": 2085, "text": "이제 몇 년이 됐습니다."}, {"start": 2085, "end": 2089, "text": "거북이 할아버지는 매일 언덕에 올라갔습니다."}, {"start": 2089, "end": 2094, "text": "다사랑 숲 입구가 내려다보이는 언덕이었습니다."}, {"start": 2094, "end": 2096, "text": "한참 앉아 있었습니다."}, {"start": 2096, "end": 2099, "text": "언덕에서 내려다보면."}, {"start": 2099, "end": 2103, "text": "숲 입구로 들어오는 동물들이 보였습니다."}, {"start": 2103, "end": 2106, "text": "그 중에 아들이 있을까봐?"}, {"start": 2106, "end": 2109, "text": "아들 걸음걸이를 알고 있었습니다."}, {"start": 2109, "end": 2113, "text": "왼쪽 발을 조금 질질 끄는 걸음이었습니다."}, {"start": 2113, "end": 2116, "text": "어릴 때 다쳐서 그렇게 됐습니다."}, {"start": 2116, "end": 2120, "text": "그 걸음으로 오는 누군가가 보이면?"}, {"start": 2120, "end": 2123, "text": "한참 더 자세히 봤습니다."}, {"start": 2123, "end": 2125, "text": "아들이 아니었습니다."}, {"start": 2125, "end": 2129, "text": "매일 아들이 아니었습니다."}, {"start": 2129, "end": 2132, "text": "거북이 할아버지가 집에 돌아오면."}, {"start": 2132, "end": 2135, "text": "밥상을 두 개 차렸습니다."}, {"start": 2135, "end": 2137, "text": "혼자 먹는 밥상과."}, {"start": 2137, "end": 2139, "text": "아들 것."}, {"start": 2139, "end": 2143, "text": "아들 것은 매일 그냥 남았습니다."}, {"start": 2143, "end": 2147, "text": "거북이 할아버지가 그 밥상을 치우면서 혼자 말했습니다."}, {"start": 2147, "end": 2150, "text": "오늘도 안 왔네?"}, {"start": 2150, "end": 2153, "text": "그래도 내일 또 차렸습니다."}, {"start": 2153, "end": 2155, "text": "여러분."}, {"start": 2155, "end": 2158, "text": "오래 연락 못 받으신 분 계십니까?"}, {"start": 2158, "end": 2161, "text": "그래도 기다리고 계신 분 계십니까?"}, {"start": 2161, "end": 2163, "text": "그 마음."}, {"start": 2163, "end": 2166, "text": "얼마나 긴 마음인지?"}, {"start": 2166, "end": 2168, "text": "저는 압니다."}, {"start": 2168, "end": 2173, "text": "그리고 이 이야기를 듣고 계신 여러분의 자녀들도."}, {"start": 2173, "end": 2176, "text": "언젠가는 알게 될 겁니다."}, {"start": 2176, "end": 2179, "text": "조금만 더 기다려 주십시오."}, {"start": 2179, "end": 2183, "text": "일곱 번째 이야기 — 단이가 알게 된 날."}, {"start": 2183, "end": 2186, "text": "단이가 결혼을 했습니다."}, {"start": 2186, "end": 2188, "text": "봄이가 울었습니다."}, {"start": 2188, "end": 2191, "text": "동이가 울었습니다."}, {"start": 2191, "end": 2195, "text": "할머니 곰이 꿀 항아리를 들고 와서 울었습니다."}, {"start": 2195, "end": 2198, "text": "할아버지 곰이 \"응?\"."}, {"start": 2198, "end": 2199, "text": "뭐라고?"}, {"start": 2199, "end": 2202, "text": "'뭐라고?'를 다섯 번 하다가 울었습니다."}, {"start": 2202, "end": 2205, "text": "단이가 그날 봄이한테 말했습니다."}, {"start": 2205, "end": 2208, "text": "엄마, 왜 울어?"}, {"start": 2208, "end": 2210, "text": "기쁜 날이잖아?"}, {"start": 2210, "end": 2213, "text": "봄이가 눈물을 닦으며 웃었습니다."}, {"start": 2213, "end": 2216, "text": "기뻐서 우는 거야?"}, {"start": 2216, "end": 2218, "text": "기뻐서 우는 것인지?"}, {"start": 2218, "end": 2221, "text": "다른 이유가 있는 것인지?"}, {"start": 2221, "end": 2224, "text": "그것은 봄이만 알았습니다."}, {"start": 2224, "end": 2227, "text": "그리고 몇 년이 지났습니다."}, {"start": 2227, "end": 2230, "text": "단이에게 아기가 생겼습니다."}, {"start": 2230, "end": 2234, "text": "봄이가 그 소식을 들었을 때 한 일은?"}, {"start": 2234, "end": 2237, "text": "꿀 항아리를 샀습니다."}, {"start": 2237, "end": 2240, "text": "동이가 한 일은 울었습니다."}, {"start": 2240, "end": 2242, "text": "할머니 곰이 한 일은?"}, {"start": 2242, "end": 2247, "text": "쌓아뒀던 항아리를 하나 더 꺼내서 닦았습니다."}, {"start": 2247, "end": 2250, "text": "아기가 태어나는 날이었습니다."}, {"start": 2250, "end": 2253, "text": "단이는 분만실 앞에서 서성이었습니다."}, {"start": 2253, "end": 2256, "text": "열 걸음 갔다가 돌아오고."}, {"start": 2256, "end": 2259, "text": "열 걸음 갔다가 돌아오고."}, {"start": 2259, "end": 2262, "text": "옆에 있던 봄이가 말했습니다."}, {"start": 2262, "end": 2263, "text": "단이야?"}, {"start": 2263, "end": 2265, "text": "좀 앉아."}, {"start": 2265, "end": 2267, "text": "단이가 앉았습니다."}, {"start": 2267, "end": 2270, "text": "다섯 초 만에 일어났습니다."}, {"start": 2270, "end": 2273, "text": "봄이가 웃었습니다."}, {"start": 2273, "end": 2277, "text": "동이가 봄이한테 작은 목소리로 말했습니다."}, {"start": 2277, "end": 2278, "text": "봄이야."}, {"start": 2278, "end": 2281, "text": "나 저 모습 어디서 봤는데?"}, {"start": 2281, "end": 2283, "text": "봄이가 동이를 봤습니다."}, {"start": 2283, "end": 2285, "text": "어디서 봤어?"}, {"start": 2285, "end": 2287, "text": "오래 전에."}, {"start": 2287, "end": 2290, "text": "두 사람이 눈을 마주쳤습니다."}, {"start": 2290, "end": 2293, "text": "그리고 같이 웃었습니다."}, {"start": 2293, "end": 2296, "text": "굴 안에서 소리가 났습니다."}, {"start": 2296, "end": 2298, "text": "앙앙."}, {"start": 2298, "end": 2301, "text": "단이가 그 소리를 들었습니다."}, {"start": 2301, "end": 2304, "text": "눈에서 뭔가 흘렀습니다."}, {"start": 2304, "end": 2307, "text": "단이가 달렸습니다."}, {"start": 2307, "end": 2309, "text": "앞에 있는 나무 쪽으로."}, {"start": 2309, "end": 2314, "text": "봄이가 외쳤습니다."}, {"start": 2314, "end": 2317, "text": "나무."}, {"start": 2317, "end": 2320, "text": "단이가 나무에 이마를 박았습니다."}, {"start": 2320, "end": 2323, "text": "동이가 고개를 저었습니다."}, {"start": 2323, "end": 2326, "text": "저 녀석이 나를 닮았어?"}, {"start": 2326, "end": 2330, "text": "단이가 아이를 처음 안은 것은 그날 저녁이었습니다."}, {"start": 2330, "end": 2333, "text": "작은 아기였습니다."}, {"start": 2333, "end": 2336, "text": "검은 털이 복실복실한."}, {"start": 2336, "end": 2339, "text": "아주 작은 곰 아기였습니다."}, {"start": 2339, "end": 2342, "text": "단이가 아이를 안았습니다."}, {"start": 2342, "end": 2345, "text": "아이가 눈을 꼭 감고 있었습니다."}, {"start": 2345, "end": 2348, "text": "코가 조금 뭉툭했습니다."}, {"start": 2348, "end": 2351, "text": "손이 아주 작았습니다."}, {"start": 2351, "end": 2354, "text": "단이가 손가락 하나를 내밀었습니다."}, {"start": 2354, "end": 2358, "text": "아이가 그 손가락을 잡았습니다."}, {"start": 2358, "end": 2360, "text": "작은 손으로."}, {"start": 2360, "end": 2362, "text": "꼭 잡았습니다."}, {"start": 2362, "end": 2365, "text": "그 순간이었습니다."}, {"start": 2365, "end": 2369, "text": "단이 머리 속에 뭔가가 스쳐 지나갔습니다."}, {"start": 2369, "end": 2372, "text": "아주 오래된 장면들이었습니다."}, {"start": 2372, "end": 2375, "text": "새벽 네 시에 불이 켜진 부엌."}, {"start": 2375, "end": 2379, "text": "열이 날 때 밤새 이마를 짚어 주던 손."}, {"start": 2379, "end": 2383, "text": "학교 첫날 문 앞에서 엄마 꼬리를 잡았던 그 꼬리."}, {"start": 2383, "end": 2387, "text": "버스 뒤로 200 미터를 뛰어오던 아빠."}, {"start": 2387, "end": 2392, "text": "눈길에서 무릎을 다치면서도 항아리를 놓지 않던 할머니."}, {"start": 2392, "end": 2396, "text": "매일 언덕에 올라 내려다보던 거북이 할아버지."}, {"start": 2396, "end": 2401, "text": "단이는 지금까지 그 모든 것을 알고 있었습니다."}, {"start": 2401, "end": 2404, "text": "알고 있었지만 느끼지 못했습니다."}, {"start": 2404, "end": 2407, "text": "그런데 지금 이 순간."}, {"start": 2407, "end": 2412, "text": "이 작은 손가락 다섯 개가 자신의 손가락을 잡는 이 순간."}, {"start": 2412, "end": 2415, "text": "단이는 처음으로 느꼈습니다."}, {"start": 2415, "end": 2418, "text": "봄이가 어떤 마음이었는지를."}, {"start": 2418, "end": 2421, "text": "동이가 어떤 마음이었는지를."}, {"start": 2421, "end": 2426, "text": "할머니 곰이 눈길을 걸어오면서 어떤 마음이었는지를."}, {"start": 2426, "end": 2431, "text": "거북이 할아버지가 언덕에서 어떤 마음으로 내려다 봤는지를."}, {"start": 2431, "end": 2435, "text": "단이 눈에서 눈물이 흘렀습니다."}, {"start": 2435, "end": 2438, "text": "아이 아내가 물었습니다."}, {"start": 2438, "end": 2439, "text": "왜 울어?"}, {"start": 2439, "end": 2443, "text": "단이가 한참 있다가 말했습니다."}, {"start": 2443, "end": 2445, "text": "이제 알았어?"}, {"start": 2445, "end": 2446, "text": "뭘?"}, {"start": 2446, "end": 2450, "text": "엄마가 왜 새벽 네 시에 일어났는지를."}, {"start": 2450, "end": 2453, "text": "아내가 단이를 봤습니다."}, {"start": 2453, "end": 2457, "text": "아빠가 왜 스무 번이나 잘 먹으라고 했는지를."}, {"start": 2457, "end": 2461, "text": "할머니가 왜 눈길을 걸어왔는지를."}, {"start": 2461, "end": 2463, "text": "이제 알았어?"}, {"start": 2463, "end": 2466, "text": "단이가 아이를 안으면서 말했습니다."}, {"start": 2466, "end": 2469, "text": "이렇게 작은 것 때문에."}, {"start": 2469, "end": 2472, "text": "이렇게 작은 것 하나 때문에."}, {"start": 2472, "end": 2474, "text": "다 할 수 있는 거였어?"}, {"start": 2474, "end": 2476, "text": "여러분."}, {"start": 2476, "end": 2478, "text": "이 순간."}, {"start": 2478, "end": 2482, "text": "여러분도 그런 순간이 있으셨습니까?"}, {"start": 2482, "end": 2486, "text": "자식이 부모 마음을 처음으로 이해한 순간."}, {"start": 2486, "end": 2488, "text": "손자 손녀가 태어나서."}, {"start": 2488, "end": 2491, "text": "자식이 전화를 해 온 날."}, {"start": 2491, "end": 2494, "text": "그날 생각나십니까?"}, {"start": 2494, "end": 2497, "text": "그날 이야기가 끝났습니다."}, {"start": 2497, "end": 2501, "text": "단이가 아이를 재우면서 새벽 두시가 됐습니다."}, {"start": 2501, "end": 2504, "text": "아이가 잠들었습니다."}, {"start": 2504, "end": 2507, "text": "단이가 핸드폰을 들었습니다."}, {"start": 2507, "end": 2510, "text": "봄이 번호를 눌렀습니다."}, {"start": 2510, "end": 2512, "text": "신호가 같습니다."}, {"start": 2512, "end": 2515, "text": "1번 만에 받았습니다."}, {"start": 2515, "end": 2516, "text": "단이야."}, {"start": 2516, "end": 2519, "text": "봄이 목소리였습니다."}, {"start": 2519, "end": 2521, "text": "단이가 물었습니다."}, {"start": 2521, "end": 2525, "text": "엄마, 안 자고 있었어?"}, {"start": 2525, "end": 2528, "text": "아니 자고 있었어?"}, {"start": 2528, "end": 2529, "text": "거짓말."}, {"start": 2529, "end": 2532, "text": "한 번에 받았잖아."}, {"start": 2532, "end": 2534, "text": "봄이가 웃었습니다."}, {"start": 2534, "end": 2536, "text": "조금 깨어 있었어?"}, {"start": 2536, "end": 2540, "text": "단이가 잠깐 아무 말도 하지 않았습니다."}, {"start": 2540, "end": 2543, "text": "그리고 말했습니다."}, {"start": 2543, "end": 2546, "text": "엄마."}, {"start": 2546, "end": 2548, "text": "나 아이 낳았잖아."}, {"start": 2548, "end": 2551, "text": "응 알아?"}, {"start": 2551, "end": 2554, "text": "엄마가 나 낳을 때 이런 기분이었어?"}, {"start": 2554, "end": 2558, "text": "봄이가 전화 너머에서 잠깐 조용했습니다."}, {"start": 2558, "end": 2559, "text": "응."}, {"start": 2559, "end": 2563, "text": "이렇게 작은데 이렇게 무서워?"}, {"start": 2563, "end": 2567, "text": "이렇게 작은데 이렇게 좋아?"}, {"start": 2567, "end": 2569, "text": "응."}, {"start": 2569, "end": 2572, "text": "단이가 아이를 내려다봤습니다."}, {"start": 2572, "end": 2575, "text": "엄마."}, {"start": 2575, "end": 2577, "text": "그동안 고마워."}, {"start": 2577, "end": 2579, "text": "진짜로?"}, {"start": 2579, "end": 2582, "text": "봄이가 아무 말도 하지 않았습니다."}, {"start": 2582, "end": 2585, "text": "전화 너머에서 조용했습니다."}, {"start": 2585, "end": 2590, "text": "그러다가 봄이 목소리가 들렸습니다."}, {"start": 2590, "end": 2592, "text": "응."}, {"start": 2592, "end": 2595, "text": "엄마가 그 말 기다렸어?"}, {"start": 2595, "end": 2596, "text": "응."}, {"start": 2596, "end": 2598, "text": "기다렸어?"}, {"start": 2598, "end": 2599, "text": "오래."}, {"start": 2599, "end": 2602, "text": "봄이 목소리가 떨렸습니다."}, {"start": 2602, "end": 2606, "text": "단이 눈에서 눈물이 흘렀습니다."}, {"start": 2606, "end": 2608, "text": "엄마 울어?"}, {"start": 2608, "end": 2610, "text": "응 울어."}, {"start": 2610, "end": 2612, "text": "기뻐서?"}, {"start": 2612, "end": 2613, "text": "여러분."}, {"start": 2613, "end": 2618, "text": "자식한테 그 말을 들으신 적 있으십니까?"}, {"start": 2618, "end": 2620, "text": "엄마, 고마워."}, {"start": 2620, "end": 2621, "text": "아빠."}, {"start": 2621, "end": 2623, "text": "고마워."}, {"start": 2623, "end": 2626, "text": "그 말을 기다리고 계십니까?"}, {"start": 2626, "end": 2628, "text": "기다리고 계시다면?"}, {"start": 2628, "end": 2631, "text": "조금만 더 기다려 주십시오."}, {"start": 2631, "end": 2634, "text": "반드시 옵니다."}, {"start": 2634, "end": 2636, "text": "기다리다 지치셨다면?"}, {"start": 2636, "end": 2645, "text": "이 이야기가 그 대신이 됐으면 합니다."}, {"start": 2645, "end": 2648, "text": "여덟 번째 이야기 — 돌아가는 길."}, {"start": 2648, "end": 2653, "text": "단이가 아이를 안고 다사랑 숲으로 돌아갔습니다."}, {"start": 2653, "end": 2656, "text": "봄이가 문을 열었습니다."}, {"start": 2656, "end": 2659, "text": "단이가 들어오는 것을 봤습니다."}, {"start": 2659, "end": 2662, "text": "그리고 단이 품에 있는 것을 봤습니다."}, {"start": 2662, "end": 2666, "text": "봄이가 아무 말도 하지 않았습니다."}, {"start": 2666, "end": 2669, "text": "그냥 손으로 입을 막았습니다."}, {"start": 2669, "end": 2672, "text": "눈에서 눈물이 흘렀습니다."}, {"start": 2672, "end": 2674, "text": "단이가 말했습니다."}, {"start": 2674, "end": 2677, "text": "엄마 인사해."}, {"start": 2677, "end": 2679, "text": "이게 우리 아이야?"}, {"start": 2679, "end": 2682, "text": "봄이가 손을 뻗었습니다."}, {"start": 2682, "end": 2686, "text": "아이의 볼을 손가락으로 건드렸습니다."}, {"start": 2686, "end": 2688, "text": "봄이가 웃었습니다."}, {"start": 2688, "end": 2691, "text": "소리가 없는 웃음이었습니다."}, {"start": 2691, "end": 2694, "text": "눈물이 흐르는데 웃고 있었습니다."}, {"start": 2694, "end": 2696, "text": "예쁘다."}, {"start": 2696, "end": 2699, "text": "목소리가 떨렸습니다."}, {"start": 2699, "end": 2701, "text": "동이가 나왔습니다."}, {"start": 2701, "end": 2704, "text": "아이를 봤습니다."}, {"start": 2704, "end": 2706, "text": "동이가 무릎을 꿇었습니다."}, {"start": 2706, "end": 2710, "text": "아이 눈높이에서 아이를 봤습니다."}, {"start": 2710, "end": 2712, "text": "안녕."}, {"start": 2712, "end": 2714, "text": "나 할아버지야?"}, {"start": 2714, "end": 2716, "text": "그 말을 하는 순간."}, {"start": 2716, "end": 2720, "text": "동이 눈에서 눈물이 떨어졌습니다."}, {"start": 2720, "end": 2722, "text": "나 안 울어."}, {"start": 2722, "end": 2725, "text": "그러면서 울었습니다."}, {"start": 2725, "end": 2727, "text": "단이가 웃었습니다."}, {"start": 2727, "end": 2730, "text": "아빠 울잖아."}, {"start": 2730, "end": 2732, "text": "안 울어."}, {"start": 2732, "end": 2734, "text": "눈에 뭐 들어간 거야?"}, {"start": 2734, "end": 2737, "text": "봄이가 동이 등을 두드렸습니다."}, {"start": 2737, "end": 2738, "text": "괜찮아?"}, {"start": 2738, "end": 2740, "text": "울어."}, {"start": 2740, "end": 2743, "text": "동이가 더 크게 울었습니다."}, {"start": 2743, "end": 2746, "text": "할머니 곰이 왔습니다."}, {"start": 2746, "end": 2752, "text": "오래 쌓아뒀던 꿀 항아리들을 전부 들고 왔습니다."}, {"start": 2752, "end": 2755, "text": "할머니, 이게 다 뭐야?"}, {"start": 2755, "end": 2758, "text": "내가 안 와서 사놓은 거야?"}, {"start": 2758, "end": 2760, "text": "다 가져가."}, {"start": 2760, "end": 2763, "text": "단이가 항아리들을 봤습니다."}, {"start": 2763, "end": 2766, "text": "오래된 것들이었습니다."}, {"start": 2766, "end": 2769, "text": "먼지가 닦인 흔적이 있었습니다."}, {"start": 2769, "end": 2772, "text": "할머니 이거 오래됐는데?"}, {"start": 2772, "end": 2774, "text": "닦았어?"}, {"start": 2774, "end": 2776, "text": "괜찮아?"}, {"start": 2776, "end": 2779, "text": "단이가 할머니 손을 잡았습니다."}, {"start": 2779, "end": 2781, "text": "할머니."}, {"start": 2781, "end": 2782, "text": "응."}, {"start": 2782, "end": 2784, "text": "고마워."}, {"start": 2784, "end": 2788, "text": "할머니 곰이 단이 손을 꼭 잡았습니다."}, {"start": 2788, "end": 2790, "text": "고맙긴."}, {"start": 2790, "end": 2792, "text": "네 덕분에 내가 살았지?"}, {"start": 2792, "end": 2794, "text": "네 덕분에."}, {"start": 2794, "end": 2797, "text": "네 생각 하면서 살았어?"}, {"start": 2797, "end": 2800, "text": "단이 오면 줘야지."}, {"start": 2800, "end": 2802, "text": "단이 보고 싶다."}, {"start": 2802, "end": 2804, "text": "그러면서."}, {"start": 2804, "end": 2807, "text": "단이가 할머니를 안았습니다."}, {"start": 2807, "end": 2811, "text": "할머니 곰이 단이 등을 토닥였습니다."}, {"start": 2811, "end": 2812, "text": "잘 왔어?"}, {"start": 2812, "end": 2814, "text": "여러분."}, {"start": 2814, "end": 2816, "text": "이 두 마디."}, {"start": 2816, "end": 2819, "text": "가슴에 닿으십니까?"}, {"start": 2819, "end": 2822, "text": "네 덕분에 내가 살았지?"}, {"start": 2822, "end": 2824, "text": "잘 왔어?"}, {"start": 2824, "end": 2826, "text": "자식이 오면?"}, {"start": 2826, "end": 2828, "text": "손자 손녀가 오면."}, {"start": 2828, "end": 2830, "text": "그게 다입니다."}, {"start": 2830, "end": 2833, "text": "그것만으로 됩니다."}, {"start": 2833, "end": 2836, "text": "할아버지 곰이 아이를 봤습니다."}, {"start": 2836, "end": 2839, "text": "오랫동안 봤습니다."}, {"start": 2839, "end": 2842, "text": "그리고 아주 작은 목소리로 말했습니다."}, {"start": 2842, "end": 2844, "text": "이름 뭐야?"}, {"start": 2844, "end": 2848, "text": "할아버지, 아직 못 지었어?"}, {"start": 2848, "end": 2851, "text": "할아버지 곰이 아이 손을 잡았습니다."}, {"start": 2851, "end": 2855, "text": "아이가 할아버지 손가락을 잡았습니다."}, {"start": 2855, "end": 2858, "text": "할아버지 곰이 웃었습니다."}, {"start": 2858, "end": 2860, "text": "귀가 안 들려도."}, {"start": 2860, "end": 2862, "text": "무릎이 안 좋아도."}, {"start": 2862, "end": 2866, "text": "보청기를 꿀 항아리에 넣어둬도."}, {"start": 2866, "end": 2870, "text": "그 웃음은 다사랑 숲에서 가장 환한 웃음이었습니다."}, {"start": 2870, "end": 2873, "text": "그날 저녁이었습니다."}, {"start": 2873, "end": 2876, "text": "단이가 봄이한테 말했습니다."}, {"start": 2876, "end": 2878, "text": "엄마."}, {"start": 2878, "end": 2879, "text": "응?"}, {"start": 2879, "end": 2881, "text": "나 미안해."}, {"start": 2881, "end": 2884, "text": "봄이가 단이를 봤습니다."}, {"start": 2884, "end": 2885, "text": "뭐가?"}, {"start": 2885, "end": 2888, "text": "명절에 못 간 것도."}, {"start": 2888, "end": 2891, "text": "전화 자주 못한 것도."}, {"start": 2891, "end": 2894, "text": "학교 앞의 할머니 오지 말라고 한 것도."}, {"start": 2894, "end": 2898, "text": "엄마 운동회 구석에 앉으라고 한 것도."}, {"start": 2898, "end": 2902, "text": "봄이가 잠깐 있다가 말했습니다."}, {"start": 2902, "end": 2903, "text": "다 기억해?"}, {"start": 2903, "end": 2907, "text": "응, 괜찮아?"}, {"start": 2907, "end": 2909, "text": "괜찮지 않았을 텐데?"}, {"start": 2909, "end": 2913, "text": "봄이가 단이 손을 잡았습니다."}, {"start": 2913, "end": 2915, "text": "괜찮았어?"}, {"start": 2915, "end": 2916, "text": "진짜로?"}, {"start": 2916, "end": 2919, "text": "내가 그럴 나이였으니까."}, {"start": 2919, "end": 2921, "text": "그래도."}, {"start": 2921, "end": 2924, "text": "단이야."}, {"start": 2924, "end": 2926, "text": "지금 이렇게 오면 돼."}, {"start": 2926, "end": 2930, "text": "이렇게 오는 거면 다 괜찮아?"}, {"start": 2930, "end": 2933, "text": "단이 눈에서 눈물이 흘렀습니다."}, {"start": 2933, "end": 2936, "text": "봄이도 눈물이 흘렀습니다."}, {"start": 2936, "end": 2940, "text": "두 곰이 잠깐 그렇게 앉아 있었습니다."}, {"start": 2940, "end": 2941, "text": "여러분."}, {"start": 2941, "end": 2943, "text": "이 말?"}, {"start": 2943, "end": 2947, "text": "지금 오면 돼 이렇게 오면 다 괜찮아?"}, {"start": 2947, "end": 2950, "text": "이 말을 해주고 싶은 분이 계십니까?"}, {"start": 2950, "end": 2954, "text": "이 말을 듣고 싶은 분이 계십니까?"}, {"start": 2954, "end": 2957, "text": "다음날 새벽이었습니다."}, {"start": 2957, "end": 2960, "text": "단이가 새벽에 일어났습니다."}, {"start": 2960, "end": 2963, "text": "아이가 울어서 일어났습니다."}, {"start": 2963, "end": 2966, "text": "아이를 달래다보니 새벽 네 시가 됐습니다."}, {"start": 2966, "end": 2970, "text": "부엌에 불이 켜져 있었습니다."}, {"start": 2970, "end": 2972, "text": "봄이가 거기 있었습니다."}, {"start": 2972, "end": 2975, "text": "엄마 왜 일어났어?"}, {"start": 2975, "end": 2978, "text": "단이 아이 밥 만들려고"}, {"start": 2978, "end": 2979, "text": "엄마."}, {"start": 2979, "end": 2981, "text": "아직 이른데?"}, {"start": 2981, "end": 2985, "text": "아기가 배고프면 미리 준비해야지."}, {"start": 2985, "end": 2988, "text": "단이가 봄이 옆에 섰습니다."}, {"start": 2988, "end": 2991, "text": "부엌 창밖이 아직 어두웠습니다."}, {"start": 2991, "end": 2995, "text": "봄이가 혼자 뭔가를 만들고 있었습니다."}, {"start": 2995, "end": 2998, "text": "단이가 그 옆에 섰습니다."}, {"start": 2998, "end": 3001, "text": "엄마 나도 할게."}, {"start": 3001, "end": 3004, "text": "봄이가 단이를 봤습니다."}, {"start": 3004, "end": 3005, "text": "됐어?"}, {"start": 3005, "end": 3007, "text": "사."}, {"start": 3007, "end": 3009, "text": "엄마가 할 거잖아?"}, {"start": 3009, "end": 3011, "text": "엄마가 할 거야?"}, {"start": 3011, "end": 3013, "text": "같이 해."}, {"start": 3013, "end": 3016, "text": "봄이가 잠깐 단이를 봤습니다."}, {"start": 3016, "end": 3020, "text": "그리고 웃으면서 자리를 조금 내줬습니다."}, {"start": 3020, "end": 3024, "text": "두 곰이 새벽 네 시에 나란히 섰습니다."}, {"start": 3024, "end": 3028, "text": "창밖에서 해가 조금씩 오르기 시작했습니다."}, {"start": 3028, "end": 3030, "text": "여러분."}, {"start": 3030, "end": 3032, "text": "이 새벽이?"}, {"start": 3032, "end": 3035, "text": "얼마나 따뜻한 새벽인지?"}, {"start": 3035, "end": 3037, "text": "아시겠습니까?"}, {"start": 3037, "end": 3039, "text": "새벽 네 시."}, {"start": 3039, "end": 3042, "text": "엄마 옆에 선 아이."}, {"start": 3042, "end": 3044, "text": "그게 다입니다."}, {"start": 3044, "end": 3046, "text": "그것이 전부입니다."}, {"start": 3046, "end": 3049, "text": "사랑이 돌아온 겁니다."}, {"start": 3049, "end": 3053, "text": "아홉 번째 이야기 — 거북이 할아버지."}, {"start": 3053, "end": 3056, "text": "단이가 거북이 할아버지를 찾아갔습니다."}, {"start": 3056, "end": 3060, "text": "오소리 선생한테서 이야기를 들었습니다."}, {"start": 3060, "end": 3063, "text": "아들이 오래 연락이 없대."}, {"start": 3063, "end": 3066, "text": "매일 언덕에 올라간다더라."}, {"start": 3066, "end": 3070, "text": "단이가 거북이 할아버지 집을 찾아갔습니다."}, {"start": 3070, "end": 3072, "text": "노크를 했습니다."}, {"start": 3072, "end": 3075, "text": "오랫동안 반응이 없었습니다."}, {"start": 3075, "end": 3078, "text": "그러다가 문이 열렸습니다."}, {"start": 3078, "end": 3081, "text": "거북이 할아버지가 나왔습니다."}, {"start": 3081, "end": 3085, "text": "오랫동안 혼자 산 얼굴이었습니다."}, {"start": 3085, "end": 3087, "text": "누구요?"}, {"start": 3087, "end": 3089, "text": "저 단이에요."}, {"start": 3089, "end": 3091, "text": "곰집 단이요?"}, {"start": 3091, "end": 3093, "text": "들어와도 될까요?"}, {"start": 3093, "end": 3097, "text": "거북이 할아버지 집안에 들어가 보니."}, {"start": 3097, "end": 3100, "text": "밥상이 두 개 있었습니다."}, {"start": 3100, "end": 3102, "text": "하나는 할아버지 것이고."}, {"start": 3102, "end": 3105, "text": "하나는 비어 있었습니다."}, {"start": 3105, "end": 3108, "text": "단이가 그 밥상을 봤습니다."}, {"start": 3108, "end": 3109, "text": "할아버지."}, {"start": 3109, "end": 3111, "text": "저 밥상은요?"}, {"start": 3111, "end": 3115, "text": "거북이 할아버지가 잠깐 있다가 말했습니다."}, {"start": 3115, "end": 3117, "text": "아들 것이야."}, {"start": 3117, "end": 3120, "text": "아드님이 오세요?"}, {"start": 3120, "end": 3121, "text": "모르겠어?"}, {"start": 3121, "end": 3124, "text": "올 수도 있잖아."}, {"start": 3124, "end": 3127, "text": "단이가 그 밥상을 봤습니다."}, {"start": 3127, "end": 3129, "text": "먼지가 없었습니다."}, {"start": 3129, "end": 3132, "text": "매일 닦는 것이었습니다."}, {"start": 3132, "end": 3135, "text": "단이가 말했습니다."}, {"start": 3135, "end": 3136, "text": "할아버지."}, {"start": 3136, "end": 3139, "text": "저 오늘 여기서 밥 먹어도 될까요?"}, {"start": 3139, "end": 3143, "text": "거북이 할아버지가 단이를 봤습니다."}, {"start": 3143, "end": 3144, "text": "왜요?"}, {"start": 3144, "end": 3146, "text": "그냥요."}, {"start": 3146, "end": 3148, "text": "같이 먹고 싶어서요?"}, {"start": 3148, "end": 3152, "text": "거북이 할아버지가 잠깐 있다가 말했습니다."}, {"start": 3152, "end": 3154, "text": "그래요?"}, {"start": 3154, "end": 3157, "text": "단이가 아들 몫 밥상에 앉았습니다."}, {"start": 3157, "end": 3160, "text": "두 사람이 밥을 먹었습니다."}, {"start": 3160, "end": 3164, "text": "처음에는 아무 말도 없었습니다."}, {"start": 3164, "end": 3169, "text": "그러다가 거북이 할아버지가 아주 작은 목소리로 말했습니다."}, {"start": 3169, "end": 3171, "text": "우리 아들도."}, {"start": 3171, "end": 3174, "text": "아이가 생겼을지 모르겠어요."}, {"start": 3174, "end": 3176, "text": "오래돼서 모르겠어?"}, {"start": 3176, "end": 3178, "text": "연락이 없으니."}, {"start": 3178, "end": 3182, "text": "단이가 밥을 먹다가 멈췄습니다."}, {"start": 3182, "end": 3184, "text": "할아버지."}, {"start": 3184, "end": 3185, "text": "응."}, {"start": 3185, "end": 3188, "text": "아드님, 연락처 아세요?"}, {"start": 3188, "end": 3189, "text": "있는데."}, {"start": 3189, "end": 3192, "text": "연락이 안 되더라고."}, {"start": 3192, "end": 3195, "text": "제가 한번 찾아봐도 될까요?"}, {"start": 3195, "end": 3199, "text": "거북이 할아버지가 단이를 봤습니다."}, {"start": 3199, "end": 3201, "text": "눈이 흔들렸습니다."}, {"start": 3201, "end": 3203, "text": "괜찮겠어요?"}, {"start": 3203, "end": 3205, "text": "네."}, {"start": 3205, "end": 3208, "text": "단이가 열심히 찾았습니다."}, {"start": 3208, "end": 3211, "text": "칠보 아저씨한테 부탁했습니다."}, {"start": 3211, "end": 3216, "text": "이 장터 저 장터를 돌며 거북이 아들 소식을 물었습니다."}, {"start": 3216, "end": 3218, "text": "열흘이 지났습니다."}, {"start": 3218, "end": 3221, "text": "칠보가 소식을 갖고 왔습니다."}, {"start": 3221, "end": 3224, "text": "거북이 아드님."}, {"start": 3224, "end": 3227, "text": "멀리 가서 자리잡고 있소."}, {"start": 3227, "end": 3231, "text": "연락이 끊긴 것은 잘못이었다고 생각하는데."}, {"start": 3231, "end": 3234, "text": "어떻게 해야 할지 몰랐다더군."}, {"start": 3234, "end": 3237, "text": "단이가 편지를 썼습니다."}, {"start": 3237, "end": 3241, "text": "거북이 할아버지가 매일 언덕에 올라간다고?"}, {"start": 3241, "end": 3243, "text": "밥상을 두 개 차린다고?"}, {"start": 3243, "end": 3246, "text": "아들 신발을 닦아둔다고?"}, {"start": 3246, "end": 3249, "text": "그 편지를 보냈습니다."}, {"start": 3249, "end": 3251, "text": "한 달 뒤였습니다."}, {"start": 3251, "end": 3255, "text": "거북이 할아버지가 언덕에 올라갔습니다."}, {"start": 3255, "end": 3258, "text": "오늘도 내려다봤습니다."}, {"start": 3258, "end": 3261, "text": "그런데 오늘은 달랐습니다."}, {"start": 3261, "end": 3265, "text": "숲 입구에서 누군가 걸어오고 있었습니다."}, {"start": 3265, "end": 3268, "text": "걸음걸이가 이상했습니다."}, {"start": 3268, "end": 3272, "text": "왼쪽 발을 조금 질질 끄는 걸음이었습니다."}, {"start": 3272, "end": 3275, "text": "거북이 할아버지가 눈을 비볐습니다."}, {"start": 3275, "end": 3277, "text": "다시 봤습니다."}, {"start": 3277, "end": 3280, "text": "그 걸음이었습니다."}, {"start": 3280, "end": 3283, "text": "거북이 할아버지가 일어났습니다."}, {"start": 3283, "end": 3286, "text": "언덕에서 내려갔습니다."}, {"start": 3286, "end": 3290, "text": "무릎이 좋지 않아서 천천히 내려갔습니다."}, {"start": 3290, "end": 3294, "text": "내려가면서 넘어질 뻔했지만 일어났습니다."}, {"start": 3294, "end": 3297, "text": "숲 입구에 도착했습니다."}, {"start": 3297, "end": 3299, "text": "거기 서 있었습니다."}, {"start": 3299, "end": 3302, "text": "거북이 아들이었습니다."}, {"start": 3302, "end": 3304, "text": "머리가 희어졌습니다."}, {"start": 3304, "end": 3307, "text": "주름이 생겼습니다."}, {"start": 3307, "end": 3309, "text": "많이 늙었습니다."}, {"start": 3309, "end": 3314, "text": "그런데 왼쪽 발을 조금 끄는 걸음걸이는 그대로였습니다."}, {"start": 3314, "end": 3316, "text": "아버지를 봤습니다."}, {"start": 3316, "end": 3318, "text": "아버지."}, {"start": 3318, "end": 3322, "text": "거북이 할아버지가 한 발 내딛었습니다."}, {"start": 3322, "end": 3325, "text": "아무 말도 하지 않았습니다."}, {"start": 3325, "end": 3328, "text": "그냥 아들 앞에 서 있었습니다."}, {"start": 3328, "end": 3331, "text": "아들이 고개를 숙였습니다."}, {"start": 3331, "end": 3333, "text": "죄송합니다."}, {"start": 3333, "end": 3337, "text": "거북이 할아버지가 아들 어깨를 잡았습니다."}, {"start": 3337, "end": 3338, "text": "됐어?"}, {"start": 3338, "end": 3340, "text": "아버지."}, {"start": 3340, "end": 3342, "text": "됐다고?"}, {"start": 3342, "end": 3343, "text": "왔잖아."}, {"start": 3343, "end": 3345, "text": "여러분."}, {"start": 3345, "end": 3347, "text": "이 두 마디."}, {"start": 3347, "end": 3349, "text": "됐어?"}, {"start": 3349, "end": 3351, "text": "왔잖아."}, {"start": 3351, "end": 3355, "text": "얼마나 긴 기다림 끝에 나온 말인지?"}, {"start": 3355, "end": 3357, "text": "아시겠습니까?"}, {"start": 3357, "end": 3360, "text": "기다리고 기다리고 또 기다리다가."}, {"start": 3360, "end": 3362, "text": "드디어 왔을 때."}, {"start": 3362, "end": 3365, "text": "그 말 하나면 됩니다."}, {"start": 3365, "end": 3366, "text": "됐어?"}, {"start": 3366, "end": 3368, "text": "왔잖아."}, {"start": 3368, "end": 3370, "text": "그게 부모입니다."}, {"start": 3370, "end": 3374, "text": "이 장면을 본 것은 단이였습니다."}, {"start": 3374, "end": 3376, "text": "멀리서 봤습니다."}, {"start": 3376, "end": 3379, "text": "개입하지 않았습니다."}, {"start": 3379, "end": 3381, "text": "그냥 봤습니다."}, {"start": 3381, "end": 3384, "text": "그리고 집으로 돌아가는 길에."}, {"start": 3384, "end": 3387, "text": "봄이한테 전화했습니다."}, {"start": 3387, "end": 3388, "text": "엄마."}, {"start": 3388, "end": 3391, "text": "응 단이야."}, {"start": 3391, "end": 3394, "text": "오늘 거북이 할아버지 아들 왔어?"}, {"start": 3394, "end": 3395, "text": "정말?"}, {"start": 3395, "end": 3397, "text": "잘됐다."}, {"start": 3397, "end": 3399, "text": "응?"}, {"start": 3399, "end": 3401, "text": "잠깐 조용했습니다."}, {"start": 3401, "end": 3403, "text": "엄마."}, {"start": 3403, "end": 3407, "text": "응 나 이번 주말에 가도 돼?"}, {"start": 3407, "end": 3410, "text": "봄이가 웃었습니다."}, {"start": 3410, "end": 3412, "text": "당연하지?"}, {"start": 3412, "end": 3414, "text": "밥 해놓을게."}, {"start": 3414, "end": 3417, "text": "엄마 이제 내가 할게."}, {"start": 3417, "end": 3419, "text": "엄마 쉬어?"}, {"start": 3419, "end": 3421, "text": "됐어?"}, {"start": 3421, "end": 3424, "text": "엄마가 하는게 더 맛있어?"}, {"start": 3424, "end": 3425, "text": "엄마."}, {"start": 3425, "end": 3426, "text": "알겠어?"}, {"start": 3426, "end": 3428, "text": "같이해."}, {"start": 3428, "end": 3431, "text": "단이도 웃었습니다."}, {"start": 3431, "end": 3434, "text": "마지막 이야기 — 꿀 항아리와 엄마 꼬리."}, {"start": 3434, "end": 3437, "text": "봄이 왔습니다."}, {"start": 3437, "end": 3440, "text": "다사랑 숲에 꽃이 폈습니다."}, {"start": 3440, "end": 3444, "text": "할머니 곰이 쌓아둔 꿀 항아리를 하나씩 꺼냈습니다."}, {"start": 3444, "end": 3446, "text": "닦았습니다."}, {"start": 3446, "end": 3449, "text": "깨끗하게 닦았습니다."}, {"start": 3449, "end": 3452, "text": "오래된 것들이었습니다."}, {"start": 3452, "end": 3455, "text": "몇 년 된 것도 있었습니다."}, {"start": 3455, "end": 3459, "text": "그런데 꿀은 오래될수록 더 달아진다고 했습니다."}, {"start": 3459, "end": 3462, "text": "할머니 곰이 단이를 불렀습니다."}, {"start": 3462, "end": 3465, "text": "단이야, 이리 와봐."}, {"start": 3465, "end": 3468, "text": "단이가 왔습니다."}, {"start": 3468, "end": 3470, "text": "아이를 안고 왔습니다."}, {"start": 3470, "end": 3474, "text": "할머니 곰이 항아리를 하나 열었습니다."}, {"start": 3474, "end": 3476, "text": "꿀향기가 퍼졌습니다."}, {"start": 3476, "end": 3480, "text": "달콤하고 진한 향기였습니다."}, {"start": 3480, "end": 3484, "text": "할머니 곰이 아이에게 꿀을 조금 내밀었습니다."}, {"start": 3484, "end": 3486, "text": "아이가 먹었습니다."}, {"start": 3486, "end": 3490, "text": "눈을 동그랗게 뜨면서 먹었습니다."}, {"start": 3490, "end": 3493, "text": "할머니 곰이 웃었습니다."}, {"start": 3493, "end": 3495, "text": "맛있지?"}, {"start": 3495, "end": 3498, "text": "아이가 더 달라는 듯 입을 벌렸습니다."}, {"start": 3498, "end": 3501, "text": "할머니 곰이 더 줬습니다."}, {"start": 3501, "end": 3506, "text": "그리고 단이한테 말했습니다."}, {"start": 3506, "end": 3509, "text": "응 할머니."}, {"start": 3509, "end": 3512, "text": "이 항아리들 다 가져가."}, {"start": 3512, "end": 3515, "text": "할머니, 이게 얼마나 많은데?"}, {"start": 3515, "end": 3518, "text": "네 아이 주려고 모은 거야?"}, {"start": 3518, "end": 3520, "text": "가져가."}, {"start": 3520, "end": 3523, "text": "단이가 항아리들을 봤습니다."}, {"start": 3523, "end": 3525, "text": "많았습니다."}, {"start": 3525, "end": 3527, "text": "정말 많았습니다."}, {"start": 3527, "end": 3531, "text": "단이가 할머니 손을 잡았습니다."}, {"start": 3531, "end": 3532, "text": "할머니."}, {"start": 3532, "end": 3534, "text": "응."}, {"start": 3534, "end": 3536, "text": "오래오래 사."}, {"start": 3536, "end": 3539, "text": "할머니 곰이 웃었습니다."}, {"start": 3539, "end": 3540, "text": "알아?"}, {"start": 3540, "end": 3545, "text": "단이 아이가 커서 내 손 잡아줄 때까지는 살아야지."}, {"start": 3545, "end": 3547, "text": "여러분."}, {"start": 3547, "end": 3549, "text": "오래오래 사세요."}, {"start": 3549, "end": 3553, "text": "손자 손녀가 할머니 손 잡아줄 때까지."}, {"start": 3553, "end": 3557, "text": "증손자 증손녀가 할머니 손 잡아줄 때까지."}, {"start": 3557, "end": 3559, "text": "오래오래 사세요."}, {"start": 3559, "end": 3563, "text": "그날 저녁 단이가 아이를 재우면서."}, {"start": 3563, "end": 3565, "text": "봄이가 들어왔습니다."}, {"start": 3565, "end": 3568, "text": "아이 옆에 앉았습니다."}, {"start": 3568, "end": 3573, "text": "봄이가 아이 얼굴을 봤습니다."}, {"start": 3573, "end": 3574, "text": "응."}, {"start": 3574, "end": 3578, "text": "이 아이 있잖아."}, {"start": 3578, "end": 3581, "text": "이 아이도 언젠가 바빠질 거야."}, {"start": 3581, "end": 3584, "text": "전화 안 하는 날도 있을 거고."}, {"start": 3584, "end": 3588, "text": "명절에 못 오는 날도 있을 거야."}, {"start": 3588, "end": 3592, "text": "단이가 아이를 봤습니다."}, {"start": 3592, "end": 3595, "text": "그때 너무 서운해하지 마."}, {"start": 3595, "end": 3597, "text": "바쁜거니까."}, {"start": 3597, "end": 3600, "text": "단이가 봄이를 봤습니다."}, {"start": 3600, "end": 3601, "text": "엄마."}, {"start": 3601, "end": 3603, "text": "응?"}, {"start": 3603, "end": 3605, "text": "엄마는 안 서운했어?"}, {"start": 3605, "end": 3607, "text": "진짜로?"}, {"start": 3607, "end": 3610, "text": "봄이가 잠깐 있다가 말했습니다."}, {"start": 3610, "end": 3612, "text": "서운했어."}, {"start": 3612, "end": 3615, "text": "그런데 있잖아 단이야."}, {"start": 3615, "end": 3620, "text": "서운한 것보다 네가 잘 살고 있는 게 더 좋았어."}, {"start": 3620, "end": 3622, "text": "그게 더 컸어?"}, {"start": 3622, "end": 3625, "text": "단이가 아이를 내려다봤습니다."}, {"start": 3625, "end": 3628, "text": "나도 그럴 수 있을까?"}, {"start": 3628, "end": 3630, "text": "봄이가 말했습니다."}, {"start": 3630, "end": 3632, "text": "할 수 있어?"}, {"start": 3632, "end": 3634, "text": "어떻게 알아?"}, {"start": 3634, "end": 3637, "text": "네가 나한테 배웠으니까."}, {"start": 3637, "end": 3639, "text": "여러분."}, {"start": 3639, "end": 3643, "text": "서운한 것보다 네가 잘 살고 있는 게 더 좋았어."}, {"start": 3643, "end": 3645, "text": "이 말?"}, {"start": 3645, "end": 3648, "text": "부모만 할 수 있는 말입니다."}, {"start": 3648, "end": 3652, "text": "자식보다 자식이 잘 되는 것을 더 좋아하는 것."}, {"start": 3652, "end": 3654, "text": "그게 부모입니다."}, {"start": 3654, "end": 3657, "text": "아이가 잠들었습니다."}, {"start": 3657, "end": 3661, "text": "봄이와 단이가 조용히 방을 나왔습니다."}, {"start": 3661, "end": 3663, "text": "마루에 앉았습니다."}, {"start": 3663, "end": 3666, "text": "마당에 별이 많이 떴습니다."}, {"start": 3666, "end": 3669, "text": "둘이 나란히 별을 봤습니다."}, {"start": 3669, "end": 3673, "text": "한참 동안 아무 말도 하지 않았습니다."}, {"start": 3673, "end": 3676, "text": "그러다가 단이가 말했습니다."}, {"start": 3676, "end": 3678, "text": "엄마."}, {"start": 3678, "end": 3682, "text": "응, 엄마 꼬리 잡아도 돼?"}, {"start": 3682, "end": 3684, "text": "봄이가 단이를 봤습니다."}, {"start": 3684, "end": 3687, "text": "눈이 조금 빨개졌습니다."}, {"start": 3687, "end": 3689, "text": "뭐라고?"}, {"start": 3689, "end": 3693, "text": "어릴 때 내가 엄마 꼬리 잡고 걸었잖아."}, {"start": 3693, "end": 3695, "text": "그거 기억나?"}, {"start": 3695, "end": 3698, "text": "봄이가 아무 말도 하지 않았습니다."}, {"start": 3698, "end": 3702, "text": "그러다가 자리를 조금 단이 쪽으로 당겼습니다."}, {"start": 3702, "end": 3704, "text": "잡아."}, {"start": 3704, "end": 3707, "text": "단이가 봄이 꼬리를 잡았습니다."}, {"start": 3707, "end": 3710, "text": "여전히 폭신했습니다."}, {"start": 3710, "end": 3712, "text": "여전히 따뜻했습니다."}, {"start": 3712, "end": 3715, "text": "단이가 눈을 감았습니다."}, {"start": 3715, "end": 3719, "text": "봄이가 단이 머리를 쓰다듬었습니다."}, {"start": 3719, "end": 3721, "text": "별이 총총한 밤에."}, {"start": 3721, "end": 3725, "text": "엄마와 아이가 나란히 앉아 있었습니다."}, {"start": 3725, "end": 3729, "text": "방안에서는 아이가 자고 있었습니다."}, {"start": 3729, "end": 3731, "text": "꼭 감은 눈."}, {"start": 3731, "end": 3733, "text": "조금 뭉툭한 코."}, {"start": 3733, "end": 3735, "text": "작은 손."}, {"start": 3735, "end": 3739, "text": "아이는 자면서 손가락을 움직였습니다."}, {"start": 3739, "end": 3742, "text": "무언가를 잡으려는 듯."}, {"start": 3742, "end": 3745, "text": "사랑은 위에서 아래로 흘렀습니다."}, {"start": 3745, "end": 3748, "text": "할머니에서 아빠로."}, {"start": 3748, "end": 3750, "text": "아빠에서 단이로."}, {"start": 3750, "end": 3752, "text": "단이에서 아이로."}, {"start": 3752, "end": 3755, "text": "그리고 언젠가."}, {"start": 3755, "end": 3757, "text": "아이가 자라면?"}, {"start": 3757, "end": 3760, "text": "단이 꼬리를 잡고 걸을 것입니다."}, {"start": 3760, "end": 3763, "text": "그리고 또 언젠가."}, {"start": 3763, "end": 3766, "text": "그 아이도 이 밤처럼."}, {"start": 3766, "end": 3768, "text": "자기 아이를 재우고."}, {"start": 3768, "end": 3771, "text": "엄마 꼬리를 잡을 것입니다."}, {"start": 3771, "end": 3774, "text": "사랑은 반드시 돌아옵니다."}, {"start": 3774, "end": 3776, "text": "위로."}, {"start": 3776, "end": 3780, "text": "그것이 이 세상에서 가장 아름다운 일입니다."}, {"start": 3780, "end": 3783, "text": "여러분."}, {"start": 3783, "end": 3787, "text": "이것이 다사랑 숲의 이야기입니다."}, {"start": 3787, "end": 3789, "text": "곰 가족의 이야기."}, {"start": 3789, "end": 3792, "text": "거북이 할아버지의 이야기."}, {"start": 3792, "end": 3794, "text": "그리고 어쩌면."}, {"start": 3794, "end": 3797, "text": "여러분의 이야기."}, {"start": 3797, "end": 3800, "text": "이 이야기를 들으시면서."}, {"start": 3800, "end": 3803, "text": "누군가의 얼굴이 떠오르셨나요?"}, {"start": 3803, "end": 3806, "text": "새벽에 일어나서 밥을 차려주시던 분."}, {"start": 3806, "end": 3810, "text": "눈길을 걸어서라도 오시던 분."}, {"start": 3810, "end": 3811, "text": "아니면?"}, {"start": 3811, "end": 3814, "text": "지금도 기다리고 계신 분?"}, {"start": 3814, "end": 3818, "text": "그분이 지금 어디 계신지 아시지요?"}, {"start": 3818, "end": 3820, "text": "오늘."}, {"start": 3820, "end": 3822, "text": "전화 한통 드리세요."}, {"start": 3822, "end": 3825, "text": "뭐라고 해야 할지 모르시겠으면."}, {"start": 3825, "end": 3828, "text": "이렇게만 하세요?"}, {"start": 3828, "end": 3830, "text": "밥 먹었어요?"}, {"start": 3830, "end": 3833, "text": "그 말 한 마디면 됩니다."}, {"start": 3833, "end": 3836, "text": "그분은 지금도 기다리고 계십니다."}, {"start": 3836, "end": 3839, "text": "첫 번째 신호에 받으실 겁니다."}, {"start": 3839, "end": 3843, "text": "자고 있지 않으셨을 테니까요."}, {"start": 3843, "end": 3844, "text": "여러분."}, {"start": 3844, "end": 3847, "text": "오늘도 고생 많으셨습니다."}, {"start": 3847, "end": 3850, "text": "살면서 많이 주셨습니다."}, {"start": 3850, "end": 3853, "text": "많이 참으셨습니다."}, {"start": 3853, "end": 3856, "text": "많이 기다리셨습니다."}, {"start": 3856, "end": 3859, "text": "그 사랑이 헛되지 않습니다."}, {"start": 3859, "end": 3861, "text": "반드시 돌아옵니다."}, {"start": 3861, "end": 3863, "text": "오늘 밤."}, {"start": 3863, "end": 3865, "text": "편안히 주무십시오."}, {"start": 3865, "end": 3868, "text": "초가등불이었습니다."}, {"start": 3868, "end": 3870, "text": "🐾."}, {"start": 3870, "end": 3875, "text": "잘 주무십시오."}];
+const IMAGE_SUBS = {"1": ["자식이 전화를 안 합니다.", "바쁘겠지?", "하면 하루가 가고.", "괜찮겠지?", "하면 일주일이 가고.", "잘 있겠지 하면 한 달이 갑니다.", "그래도 전화기는 항상 곁에 둡니다.", "밥 먹다가도 옆에 두고.", "주무실 때도 베개 곁에 두고.", "혹시 전화할까봐?", "여러분, 지금 이 마음.", "아시는 분 계십니까?", "오늘은 그 마음을 가진 곰 한 마리 이야기를 들려 드리겠습니다.", "여러분, 안녕하세요?"], "2": ["초가등불입니다.", "오늘은 조금 특별한 이야기를 들려 드리려고 합니다.", "야담도 아니고 민담도 아닙니다.", "그냥 이야기입니다.", "동물들 이야기입니다만.", "듣다 보시면 아실 겁니다.", "이것이 동물 이야기가 아니라는 것을.", "웃음이 나오는 장면도 있을 겁니다.", "또 어느 순간엔 눈물이 나오실 수도 있습니다.", "그것은 부끄러운 일이 아닙니다.", "그냥 두시면 됩니다.", "흐르는 대로 두시면 됩니다."], "3": ["그리고 이 이야기가 끝날 때쯤.", "전화 한 통 하고 싶은 분이 생기실 겁니다.", "오랫동안 못 보신 분.", "오랫동안 연락 못하신 분.", "그때 전화하시면 됩니다.", "그분은 반드시 받으실 겁니다.", "기다리고 계셨을 테니까요.", "자 시작하겠습니다.", "엄마 꼬리 이야기입니다.", "다사랑 숲에서 전해 오는 곰 가족의 이야기입니다.", "첫 번째 이야기 — 오래된 사진 한 장.", "세상 어딘가에?"], "4": ["사계절이 아주 뚜렷한 큰 숲이 있었습니다.", "봄에는 온 숲이 꽃으로 뒤덮이고.", "여름에는 나무들이 하늘을 가릴 만큼 우거지고.", "가을에는 붉고 노란 잎들이 바람에 날리고.", "겨울에는 하얀 눈이 소복소복 쌓이는 곳이었습니다.", "그 숲의 이름은 다사랑 숲이었습니다.", "다사랑 숲에는 아주 많은 동물 가족들이 살고 있었습니다.", "곰도 있었고.", "여우도 있었고.", "거북이도 있었고."], "5": ["토끼도 있었습니다.", "서로 다르게 생겼지만.", "한 가지 공통점이 있었습니다.", "모두 가족이 있었습니다.", "그리고 모든 가족에게는 이야기가 있었습니다.", "오늘은 그중에서 곰 가족의 이야기를 들려 드리겠습니다.", "이야기를 시작하기 전에.", "오래된 사진 한 장을 먼저 보여드리겠습니다.", "사십 년도 더 된 옛날.", "다사랑 숲에 젊은 곰 부부가 살고 있었습니다.", "남편 곰은 키가 크고 힘이 셌습니다.", "아내 곰은 눈이 크고 웃음이 예뻤습니다."], "6": ["두 사람은 서로 좋아해서 결혼했고.", "숲속 작은 집에서 행복하게 살았습니다.", "그리고 어느 봄날.", "아기 곰이 태어났습니다.", "이름은 동이었습니다.", "아기동이가 처음 걷기 시작한 날이었습니다.", "뒤뚱뒤뚱.", "발이 따로 놀고.", "몸이 따로 놀고.", "그러다가 풀밭에 엎어지기를 반복하는 날이었습니다.", "그때 엄마 곰이 앞에서 걸어가면서 말했습니다."], "7": ["동이야 엄마 꼬리 잡아봐.", "아기동이가 엄마 꼬리를 두 손으로 꼭 잡았습니다.", "엄마 꼬리는 폭신했습니다.", "따뜻했습니다.", "엄마가 한발 내디딜 때마다 꼬리가 살랑살랑 흔들렸고.", "동이는 그 꼬리를 붙들고 한발 한발 따라갔습니다.", "넘어지지 않았습니다.", "엄마 꼬리를 잡고 있으면?", "넘어지지 않았습니다.", "여러분.", "어릴 때 엄마 손을 잡고 걷던 기억.", "있으십니까?", "그 손이."], "8": ["얼마나 컸는지?", "얼마나 따뜻했는지?", "잊으신 분들도 계실 겁니다.", "잊을 만큼 오래 됐으니까요.", "그래도 괜찮습니다.", "오늘 이야기를 들으시다 보면.", "다시 생각나실 겁니다.", "자 계속하겠습니다.", "두 번째 이야기 — 단이가 태어난 날.", "그 아기동이가 다 자랐습니다.", "결혼도 하고.", "어엿한 아빠 곰이 됐습니다.", "그리고 어느 봄날."], "9": ["동이에게도 아기가 생겼습니다.", "그 아기의 이름이 단이입니다.", "단이가 태어나는 날이었습니다.", "아빠 곰 동이는 분만실 앞에서 세 시간째 서성이고 있었습니다.", "열 걸음 갔다가 돌아오고.", "열 걸음 갔다가 돌아오고.", "엄마 곰 봄이는 안에서 힘쓰고 있는데.", "동이는 밖에서 발만 동동 구르고 있었습니다.", "그때였습니다.", "굴 안에서 소리가 났습니다.", "앙앙.", "작고 가늘고 힘찬 소리였습니다."], "10": ["동이가 그 소리를 들은 순간.", "눈에서 뭔가가 흘렀습니다.", "눈물인지 확인하려고 손으로 만져봤습니다.", "눈물이 맞았습니다.", "동이가 소리를 질렀습니다.", "아기야!", "내 아기야!", "그러다가 기뻐서 달렸습니다.", "앞에 있는 큰 나무 쪽으로 달렸습니다.", "그리고 너무 기쁜 나머지?", "나무에 이마를 쿵 박았습니다.", "여러분, 이런 분 계십니까?", "기뻐서 어쩔 줄 모르는 분."], "11": ["아이가 태어날 때.", "손자 손녀가 태어날 때.", "그 기쁨이 어떤 것인지?", "아시는 분들은 아실 겁니다.", "이마를 박을 만큼 기쁜 것.", "동이가 겨우 굴 안으로 들어갔을 때.", "엄마 곰 봄이는 침대에 누워 있었습니다.", "그리고 봄이 품에 아주 작은 것이 있었습니다.", "검은 털이 복실복실한.", "아주 작은 곰 아기였습니다.", "눈을 꼭 감은 채로.", "봄이 품에 바짝 붙어 있었습니다."], "12": ["코가 조금 뭉툭했고.", "귀가 작았고.", "손이 아주 작았습니다.", "동이가 그 아기를 보는 순간.", "아무 말도 못했습니다.", "아무 말도.", "그냥 서 있었습니다.", "봄이가 힘없는 목소리로 말했습니다.", "동이야 와봐.", "동이가 천천히 걸어갔습니다.", "아기 옆에 무릎을 꿇었습니다.", "아기의 작은 손이 보였습니다.", "손가락이 다섯 개 있었습니다."], "13": ["아주 작은 손가락이 다섯 개.", "동이가 손가락 하나를 내밀었습니다.", "아기가 반사적으로 그 손가락을 잡았습니다.", "작은 손으로.", "꼭 잡았습니다.", "동이의 눈에서 눈물이 떨어졌습니다.", "봄이가 물었습니다.", "이름 뭐로 할 거야?", "동이가 한참 아기를 바라보다가 말했습니다.", "단이.", "단이.", "응 단이.", "달다는 뜻이야?", "이 아이가 우리 인생에서 제일 달콤한 것이니까."], "14": ["봄이가 웃었습니다.", "웃다가 눈물이 났습니다.", "그때 굴 밖에서 쿵 하는 소리가 들렸습니다.", "나가보니.", "할머니 곰이 굴 입구에서 기절해 있었습니다.", "달려오다가 너무 흥분해서 쓰러진 것이었습니다.", "손에는 꿀 항아리를 꼭 쥐고 있었습니다.", "기절하면서도 항아리는 놓지 않았습니다.", "여러분.", "손자 손녀 처음 봤을 때 생각나십니까?", "그때 그 기분이.", "어떠셨습니까?"], "15": ["할머니 곰이 눈을 떴습니다.", "단이 어딨어?", "할머니 왔다.", "할아버지 곰도 들어왔습니다.", "숨이 많이 찼습니다.", "무릎도 좋지 않은데 달려온 것이었습니다.", "응.", "단이 어딨어?", "내가 할아버지야?", "할아버지 곰은 귀가 좀 어두웠습니다.", "항상 크게 말씀하셨습니다.", "봄이가 단이를 할아버지 곰 쪽으로 살짝 들어 올렸습니다.", "할아버지 곰이 단이를 봤습니다."], "16": ["그 순간 할아버지 곰이 조용해졌습니다.", "아주 오랫동안.", "아무 말도 하지 않고.", "단이를 바라봤습니다.", "귀가 어두운 할아버지가.", "입이 잘 다물어지지 않는 할아버지가.", "그냥 서서 단이를 바라봤습니다.", "그러다가 아주 작은 목소리로 말했습니다.", "할아버지 곰의 목소리가.", "처음으로 작아졌습니다.", "봄이가 나중에 말했습니다.", "그날 할아버지 목소리가 그렇게 작은 것."], "17": ["처음 들었어", "여러분.", "손자 손녀 처음 봤을 때.", "목소리가 작아지셨습니까?", "아니면 눈물이 나셨습니까?", "그게 사랑이라는 겁니다.", "말로 하지 않아도 나오는 것.", "그게 사랑입니다.", "세 번째 이야기 — 엄마 곰이 하는 일들.", "단이가 자라기 시작했습니다.", "그리고 단이가 잘하는 만큼.", "엄마 곰 봄이와 아빠 곰 동이가 하는 일도 많아졌습니다."], "18": ["엄마 곰 봄이가 매일 하는 일을 한번 따라가 보겠습니다.", "새벽 네 시.", "봄이가 일어납니다.", "단이는 자고 있습니다.", "동이도 자고 있습니다.", "온 숲이 자고 있습니다.", "심지어 새들도 아직 일어나지 않았습니다.", "봄이 혼자 일어나 부엌으로 갑니다.", "불을 지핍니다.", "단이가 요즘 개암나무 열매를 좋아합니다.", "어제 숲에서 따온 것을 볶습니다.", "단이가 제일 좋아하는 방식으로."], "19": ["조금 달달하게.", "그리고 꿀을 한 숟가락 더 넣습니다.", "단이가 꿀을 좋아하니까.", "아침밥상을 다 차릴 때쯤.", "하늘이 조금 밝아옵니다.", "봄이가 창밖을 봅니다.", "하늘이 분홍빛으로 물들고 있습니다.", "봄이가 혼자 중얼거립니다.", "오늘도 잘 먹어야 한다.", "단이는 자고 있어서 듣지 못합니다.", "봄이는 괜찮습니다.", "들으라고 한 말이 아니니까요.", "여러분."], "20": ["이런 새벽이 있으셨습니까?", "아무도 몰래?", "아무도 시키지 않아도.", "혼자 일어나신 새벽이.", "그 새벽을 아시는 분들은 아실 겁니다.", "그게 엄마라는 것을.", "아침 일곱 시.", "단이가 일어납니다.", "봄이가 물었습니다.", "잘 잤어?", "응.", "밥먹자.", "단이가 밥상 앞에 앉습니다.", "개암 열매 볶은 것을 봅니다.", "꿀이 들어간 것을 봅니다."], "21": ["오늘 이거야.", "응, 어제 내가 좋아한다고 해서.", "도.", "봄이가 웃습니다.", "싫으면 안 먹어도 돼?", "단이가 먹습니다.", "맛있게 먹습니다.", "그릇을 싹 비웁니다.", "봄이는 단이가 먹는 것을 보면서 밥을 먹습니다.", "사실 봄이 밥은 항상 남습니다.", "단이 것을 챙기다 보면 자기 것은 잊어 버립니다.", "식어버린 밥을 나중에 후딱 먹습니다.", "여러분."], "22": ["자식꺼 챙기다가 자기 밥 식어서 드신적.", "있으십니까?", "그게 한두 번이 아니셨을 겁니다.", "그 식은 밥이?", "사실은 세상에서 제일 따뜻한 밥이었습니다.", "사랑으로 데워진 밥이었으니까요.", "봄이가 하는 일 또 하나.", "단이가 아플 때입니다.", "단이가 열이 나던 날이었습니다.", "봄이가 단이 이마에 손을 얹었습니다.", "뜨거웠습니다.", "봄이가 그 날 밤 한숨도 자지 못했습니다."], "23": ["두 시간마다 일어나서 단이 이마를 만졌습니다.", "열이 내렸는지 확인했습니다.", "찬 물수건을 갈아줬습니다.", "아빠 동이가 새벽에 눈을 비비며 물었습니다.", "봄이야.", "언제 잤어?", "조금 잤어.", "얼마나?", "조금.", "동이가 봄이 손을 잡았습니다.", "내가 이제 할게.", "사.", "괜찮아?", "단이가 깨면 엄마 찾을 수 있어?", "봄이가 정말 괜찮은지는 아무도 몰랐습니다."], "24": ["단이는 다음날 아침 열이 내리고 말끔하게 일어났습니다.", "그리고 밥을 달라고 했습니다.", "봄이가 단이밥을 차리면서 웃었습니다.", "그게 전부 보상이었습니다.", "단이가 밥 달라고 하는 것.", "여러분.", "이런 밤이 있으셨습니까?", "자식 걱정에 밤새 눈을 못 부치신 밤이.", "그런 밤이 몇 번이나 되십니까?", "셀 수 있으십니까?", "아마 셀 수가 없으실 겁니다.", "그 밤들이 다 사랑이었습니다."], "25": ["할머니 곰과 할아버지 곰도 있었습니다.", "할머니 곰은 다리가 좋지 않았지만.", "단이 보러 매일 왔습니다.", "매일.", "비가 와도 왔습니다.", "눈이 와도 왔습니다.", "한 번은 눈이 많이 온 날이었습니다.", "봄이가 할머니한테 전화했습니다.", "어머니, 오늘은 오지 마세요.", "눈이 많이 왔어요.", "괜찮아?", "길이 미끄러우면 천천히 오면 되지?", "넘어지시면 어떻게 해요?"], "26": ["안 넘어져.", "나 아직 튼튼해.", "그날 할머니 곰이 왔습니다.", "손에 꿀 항아리를 들고.", "중간에 한 번 미끄러졌지만.", "항아리는 놓지 않았습니다.", "무릎을 다치면서도.", "항아리를 들고 일어났습니다.", "봄이가 할머니 무릎을 보고 소리쳤습니다.", "어머니 무릎이 왜 이래요?", "괜찮아?", "괜찮아?", "단이 어딨어?", "단이는 지금 할머니 무릎보다 중요하지 않아요."], "27": ["뭔 소리야?", "단이가 제일 중요하지.", "할머니 곰이 단이를 찾아 방으로 갔습니다.", "무릎을 절룩거리면서.", "봄이가 그 뒷모습을 보면서.", "한참 동안 말을 못했습니다.", "여러분.", "이런 어머니.", "이런 할머니.", "계셨습니까?", "아니면?", "여러분이 그런 어머니.", "그런 할머니이십니까?", "눈길을 걷고 오셨습니까?", "무릎이 아파도 가셨습니까?"], "28": ["그게 할머니라는 겁니다.", "할아버지 곰에게는 보청기가 있었습니다.", "그런데 보청기를 자꾸 잃어버렸습니다.", "어디 두었는지 기억을 못했습니다.", "온 집안을 다 뒤집어도 없었습니다.", "어느 날 할머니 곰이 부엌에서 발견했습니다.", "꿀 항아리 안에 들어가 있었습니다.", "여보.", "보청기가 왜 꿀 항아리 안에 있어?", "응.", "뭐라고?", "보청기가 왜 꿀 항아리 안에 있냐고요?", "응."], "29": ["응.", "꿀이 맛있지?", "할머니 곰이 한숨을 쉬었습니다.", "그런데 단이가 그 장면을 보고 깔깔 웃었습니다.", "할아버지 곰이 단이 웃음소리를 들었습니다.", "귀가 잘 안 들리는 할아버지가?", "단이 웃음소리는 들었습니다.", "그리고 같이 웃었습니다.", "아무것도 못 들어도.", "손주 웃음소리는 들렸습니다.", "할머니 곰이 나중에 말했습니다.", "사랑하면 들려?", "귀가 나빠도.", "여러분."], "30": ["이 말이 맞습니까?", "사랑하면 들립니까?", "저는 맞는다고 생각합니다.", "이렇게 단이는 자랐습니다.", "매일 아침 봄이가 일찍 일어나 차려주는 밥을 먹으면서.", "매일 밤 동이가 불러주는 자장가를 들으면서.", "눈이 오는 날도 꿀 항아리를 들고 오는 할머니 품에 안기면서.", "꿀 항아리에 보청기를 넣어 두는 할아버지의 웃음소리를 들으면서.", "단이는 자랐습니다.", "그런데 단이는 알지 못했습니다.", "새벽 네 시에 봄이가 일어나는 것을."], "31": ["단이가 아플 때 봄이가 밤새 한숨도 자지 못하는 것을.", "눈길에서 할머니 곰이 넘어지면서도 항아리를 놓지 않는 것을.", "아이들은 원래 모릅니다.", "받는 것이 당연하다고 생각하는 시절이 있습니다.", "모두 그렇습니다.", "그게 잘못된 것이 아닙니다.", "그냥 아직 어린 것입니다.", "그리고 그 시절이 지나면.", "언젠가는 알게 됩니다.", "새벽 네 시에 엄마가 일어났다는 것을."], "32": ["네 번째 이야기 — 갑자기 부모가 창피해지는 나이.", "단이가 자라서 청소년이 됐습니다.", "어느 날 갑자기 모든 것이 창피해지는 나이입니다.", "부모가 창피하고.", "할머니, 할아버지가 창피하고.", "우리 집이 창피하고.", "우리 집 꿀 항아리가 창피한 나이.", "여러분도 그런 때가 있으셨습니까?", "그런 때가 있으셨다면.", "지금 생각하면 어떠십니까?", "처음 그 신호가 온 것은?", "단이가 학교 운동회 날이었습니다."], "33": ["봄이가 도시락을 잔뜩 사서 운동장에 왔습니다.", "개암 열매 볶은 것?", "꿀, 샌드위치.", "열매 주스.", "꿀 케이크.", "봄이가 큰 바구니를 들고 운동장으로 들어오면서 손을 흔들었습니다.", "단이야?", "엄마 왔어?", "단이가 친구들이랑 있다가 봄이를 봤습니다.", "그 순간 단이 얼굴이 굳었습니다.", "단이가 재빨리 친구 뒤로 숨었습니다.", "봄이가 단이를 찾다가 결국 발견했습니다.", "여기 있었네."], "34": ["엄마가 도시락 싸왔어?", "단이 얼굴이 빨개졌습니다.", "엄마 그냥 저기 앉아?", "응.", "같이 먹자.", "엄마.", "저기 앉으라고?", "봄이가 단이 표정을 봤습니다.", "알겠어?", "봄이가 조용히 운동장 구석으로 갔습니다.", "혼자 바구니를 내려놓고 앉았습니다.", "그리고 단이가 달리기하는 것을 바라봤습니다.", "단이는 뒤돌아보지 않았습니다.", "봄이는 괜찮았습니다."], "35": ["아니, 사실은 조금 속이 상했습니다.", "그래도 괜찮은 척했습니다.", "그게 엄마니까?", "여러분.", "이런 일을 겪으신 분 계십니까?", "자식한테 구석으로 가라는 말을 들으신 분.", "그때 마음이 어떠셨습니까?", "그래도 괜찮은 척하셨습니까?", "봄이가 구석에 앉아서 단이 달리기를 보면서.", "혼자 응원했습니다.", "소리는 내지 않았습니다.", "구석에서 조용히 응원했습니다."], "36": ["그게 엄마입니다.", "그 다음 주에는 할머니 곰이 학교 앞에 왔습니다.", "꿀 항아리를 두 개나 들고.", "도토리 과자 봉지를 들고.", "빨간 두 권을 쓰고.", "단이가 친구들이랑 나오다가 할머니를 받습니다.", "얼굴이 굳었습니다.", "그런데 단이 친구들은 달랐습니다.", "어머 귀여우시다.", "저 2권 봐봐.", "어르신.", "저 저것 주세요.", "도토리 과자요.", "할머니 곰이 가져온 것을 전부 단이 친구들한테 나눠줬습니다."], "37": ["단이만 저만치 서서 보고 있었습니다.", "집에 돌아오는 길의 단이가 할머니한테 말했습니다.", "할머니, 학교 앞에 그렇게 오면 안 돼?", "창피하잖아.", "할머니 곰이 잠깐 걸음을 멈췄습니다.", "그러다가 다시 걷기 시작하면서 말했습니다.", "그래, 알겠어?", "그날 집에 돌아와서 할머니 곰이 할아버지한테 말했습니다.", "여보.", "단이가 학교 앞에 오지 말래.", "단이가 뭐라고?"], "38": ["창피하데.", "할아버지 곰이 한참 있다가 말했습니다.", "우리도 그랬잖아.", "다 그런 거지?", "할머니 곰이 고개를 끄덕였습니다.", "그래도 괜찮아.", "내 손주니까.", "그 말 뒤에 할머니 곰이 혼자 창밖을 봤습니다.", "이 장면을 단이는 보지 못했습니다.", "여러분.", "그래도 괜찮아.", "내 손주니까?", "이 말?", "해보신 적 있으십니까?", "아무리 서운해도."], "39": ["그래도 괜찮다고 하신 적.", "그게 할머니라는 겁니다.", "그게 부모라는 겁니다.", "다섯 번째 이야기 — 단이가 떠나는 날.", "단이가 대학에 가게 됐습니다.", "다사랑 숲 밖에 있는 큰 도시로 가야 했습니다.", "봄이가 짐을 싸기 시작한 것은 두 달 전이었습니다.", "속옷은 열 장.", "양말은 스무 켤레.", "내복은 다섯 벌?", "비상약은 서른 가지.", "단이가 짐 가방을 보고 물었습니다."], "40": ["엄마 이게 다 뭐야?", "옷이야.", "이렇게 많이?", "거기 빨래방 있는지 몰라서?", "엄마 빨래방은 어디나 있어?", "거기 있는지 모르잖아?", "여러분.", "자식 떠나보낼 때.", "짐 속에 이것저것 넣으셨습니까?", "빨래방 있는지 모른다고 속옷을 열 장 넣으셨습니까?", "그 마음이 뭔지 아십니까?", "그냥 뭐라도 더 챙겨주고 싶은 겁니다.", "그게 다입니다.", "떠나는 날 아침이었습니다."], "41": ["봄이가 아침밥상을 차렸습니다.", "단이가 좋아하는 것 전부였습니다.", "엄마.", "왜 이렇게 많이 했어?", "오늘 아침 많이 먹어야지.", "왜?", "거기 가면 이런 것 없잖아?", "단이가 먹기 시작했습니다.", "맛있게 먹었습니다.", "봄이가 단이 먹는 것을 봤습니다.", "오늘 봄이 밥은 처음부터 식어 있었습니다.", "아까부터 밥을 뜨지 못하고 단이만 보고 있었거든요.", "버스 정류장에 온 가족이 다 나왔습니다."], "42": ["봄이, 동이, 할머니 곰, 할아버지 곰.", "할머니 곰은 꿀 항아리를 들고 왔습니다.", "이거 가져가.", "할머니 이거 무거워?", "거기 가면 꿀 없잖아?", "편의점에 있어?", "그게 맛이 같아.", "단이가 항아리를 받았습니다.", "무거웠지만 받았습니다.", "버스가 왔습니다.", "단이가 짐을 들었습니다.", "봄이가 단이를 한 번 안아줬습니다."], "43": ["꽉 안아줬습니다.", "단이도 봄이를 안았습니다.", "한번만.", "그리고 버스에 탔습니다.", "동이가 손을 흔들었습니다.", "밥 잘 먹어?", "잘 자.", "아프지마.", "전화 해.", "힘들면 와?", "버스 문이 닫혔습니다.", "단이가 창문 밖을 봤습니다.", "네 사람이 서 있었습니다.", "버스가 출발했습니다.", "동이가 뛰어왔습니다."], "44": ["버스를 따라 뛰었습니다.", "한 200 미터를 뛰다가 멈췄습니다.", "그리고 큰 소리로 외쳤습니다.", "사랑해.", "버스 안 사람들이 다 쳐다봤습니다.", "단이 얼굴이 빨개졌습니다.", "그런데 창문에 이마를 대고 뒤를 봤습니다.", "아빠가 손을 흔들고 있었습니다.", "엄마도.", "할머니도.", "할아버지도?", "버스가 모퉁이를 돌았습니다.", "보이지 않게 됐습니다."], "45": ["단이가 앞을 봤습니다.", "눈이 조금 뜨거워졌습니다.", "단이는 몰랐습니다.", "버스가 완전히 사라지자.", "봄이가 동이 손을 잡고 울기 시작한 것을.", "동이도 운 것을.", "할머니 곰이 꿀 항아리를 안고 서 있다가 혼자 중얼거린 것을.", "잘 가라.", "우리 단이야?", "할아버지 곰이 아무것도 못 들었지만.", "눈물을 흘린 것을.", "여러분.", "자식 떠나보내신 날 기억하십니까?", "버스가 사라질 때까지 서 계셨습니까?"], "46": ["그리고 집에 돌아와서.", "자식 방문을 여셨습니까?", "봄이가 집에 돌아와서 단이 방문을 열었습니다.", "그리고 한참 서 있었습니다.", "침대가 있었습니다.", "책상이 있었습니다.", "단이 사진이 붙어 있었습니다.", "봄이가 침대에 앉았습니다.", "단이 베개를 들었습니다.", "그리고 그냥 안고 있었습니다.", "아무 소리 없이.", "한참을.", "여러분."], "47": ["이 장면.", "아십니까?", "아무 말도 필요없습니다.", "아시는 분은 아실 겁니다.", "여섯 번째 이야기 — 전화가 뜸해지는 계절.", "처음에는 매일 전화가 왔습니다.", "한 달이 지났습니다.", "사흘에 한 번이 됐습니다.", "봄이는 괜찮았습니다.", "바쁜 거지?", "공부도 하고 친구도 사귀고.", "석 달이 지났습니다.", "일주일에 한 번이 됐습니다.", "봄이는 여전히 괜찮다고 했습니다."], "48": ["바쁜거야?", "대학생이 바쁘지?", "여섯 달이 지났습니다.", "열흘에 한 번이 됐습니다.", "봄이가 동이한테 물었습니다.", "동이야 단이 요즘 바쁜 것 같지?", "응 바쁜가봐.", "그렇지?", "바쁜 거지?", "그렇겠지?", "봄이가 잠깐 있다가 말했습니다.", "나 단이한테 전화해도 돼?", "동이가 봄이를 봤습니다.", "해도 될 왜 허락받아?"], "49": ["방해될까봐.", "봄이가 전화를 들었습니다.", "단이 전화를 눌렀습니다.", "신호가 같습니다.", "3번.", "받지 않았습니다.", "봄이가 전화를 내려놓았습니다.", "바쁜가봐.", "여러분.", "자식한테 전화하면서.", "방해될까봐 바쁠까봐 망설이신 적 있으십니까?", "엄마가 자식한테 전화하는 게 방해가 되면 안 되는데?", "그런데도 망설이셨습니까?", "저녁이 돼서 단이한테서 문자가 왔습니다."], "50": ["엄마 전화했어?", "수업 중이었어.", "봄이가 답장했습니다.", "괜찮아?", "아무것도 아니야.", "밥 먹었어?", "봄이가 핸드폰을 내려놓았습니다.", "저녁밥상에서 아무말 없이 밥을 먹었습니다.", "동이가 봄이 밥 먹다가 잠깐 멈추는 것을 봤습니다.", "봄이야.", "괜찮아?", "응, 괜찮아.", "봄이가 밥을 먹었습니다."], "51": ["맛있는지 모르겠지만 먹었습니다.", "명절이었습니다.", "단이한테서 연락이 왔습니다.", "엄마 나 이번 명절에 못 갈 것 같아?", "과제가 많아서?", "봄이가 답장을 썼습니다.", "그래, 알겠어?", "밥은 먹어?", "그리고 전화를 내려놓았습니다.", "봄이가 명절 음식 준비를 멈추지 않았습니다.", "단이가 안 온다고 해도 준비했습니다.", "단이 좋아하는 것들을.", "동이가 물었습니다."], "52": ["단이 안 오는데 왜 이렇게 해?", "혹시 올 수도 있잖아?", "못 온다고 했잖아?", "그래도.", "봄이가 계속 만들었습니다.", "단이는 오지 않았습니다.", "봄이가 만든 음식은 동이와 둘이 먹었습니다.", "단이 몫은 그냥 남겼습니다.", "나중에 오면 줘야지.", "여러분.", "이런 일 있으셨습니까?", "오지 않는 자식 몫을 차려 두신 적.", "혹시 올 수도 있잖아라고 하신 적."], "53": ["그 마음이.", "얼마나 크고 깊은 마음인지?", "자식들은 모릅니다.", "아직 모릅니다.", "할머니 곰에게는 더 힘든 일 이 있었습니다.", "할머니 곰은 단이가 떠난 뒤로.", "꿀 항아리를 모으기 시작했습니다.", "매 장날마다 하나씩 사 왔습니다.", "항아리가 쌓였습니다.", "10개.", "20개.", "30개.", "할아버지 곰이 물었습니다.", "이게 왜 이렇게 많아?", "단이 오면 줄 거야?"], "54": ["언제와?", "몰라?", "오면 주면 되지?", "한 달이 지나도 단이가 오지 않았습니다.", "두 달이 지나도 오지 않았습니다.", "할머니 곰은 항아리를 닦았습니다.", "먼지가 앉으면 닦았습니다.", "닦으면서 중얼거렸습니다.", "단이 오면 이것도 줘야 하는데?", "저것도 줘야 하는데.", "여러분.", "손자 손녀 오면 주려고 뭔가 모아 두신 적 있으십니까?", "언제 올지 모르는데?"], "55": ["그래도 모아 두신 적.", "그게 할머니 마음입니다.", "그리고 다사랑 숲 한쪽에는 거북이 할아버지가 있었습니다.", "거북이 할아버지는 혼자 살았습니다.", "아들이 있었습니다.", "다사랑 숲을 떠나서 먼 곳으로 간 아들이었습니다.", "처음에는 가끔 연락이 왔습니다.", "그러다가 점점 뜸해졌습니다.", "그러다가 연락이 끊겼습니다.", "이제 몇 년이 됐습니다.", "거북이 할아버지는 매일 언덕에 올라갔습니다.", "다사랑 숲 입구가 내려다보이는 언덕이었습니다."], "56": ["한참 앉아 있었습니다.", "언덕에서 내려다보면.", "숲 입구로 들어오는 동물들이 보였습니다.", "그 중에 아들이 있을까봐?", "아들 걸음걸이를 알고 있었습니다.", "왼쪽 발을 조금 질질 끄는 걸음이었습니다.", "어릴 때 다쳐서 그렇게 됐습니다.", "그 걸음으로 오는 누군가가 보이면?", "한참 더 자세히 봤습니다.", "아들이 아니었습니다.", "매일 아들이 아니었습니다."], "57": ["거북이 할아버지가 집에 돌아오면.", "밥상을 두 개 차렸습니다.", "혼자 먹는 밥상과.", "아들 것.", "아들 것은 매일 그냥 남았습니다.", "거북이 할아버지가 그 밥상을 치우면서 혼자 말했습니다.", "오늘도 안 왔네?", "그래도 내일 또 차렸습니다.", "여러분.", "오래 연락 못 받으신 분 계십니까?", "그래도 기다리고 계신 분 계십니까?", "그 마음.", "얼마나 긴 마음인지?", "저는 압니다."], "58": ["그리고 이 이야기를 듣고 계신 여러분의 자녀들도.", "언젠가는 알게 될 겁니다.", "조금만 더 기다려 주십시오.", "일곱 번째 이야기 — 단이가 알게 된 날.", "단이가 결혼을 했습니다.", "봄이가 울었습니다.", "동이가 울었습니다.", "할머니 곰이 꿀 항아리를 들고 와서 울었습니다.", "할아버지 곰이 \"응?\".", "뭐라고?", "'뭐라고?'를 다섯 번 하다가 울었습니다.", "단이가 그날 봄이한테 말했습니다."], "59": ["엄마, 왜 울어?", "기쁜 날이잖아?", "봄이가 눈물을 닦으며 웃었습니다.", "기뻐서 우는 거야?", "기뻐서 우는 것인지?", "다른 이유가 있는 것인지?", "그것은 봄이만 알았습니다.", "그리고 몇 년이 지났습니다.", "단이에게 아기가 생겼습니다.", "봄이가 그 소식을 들었을 때 한 일은?", "꿀 항아리를 샀습니다.", "동이가 한 일은 울었습니다.", "할머니 곰이 한 일은?", "쌓아뒀던 항아리를 하나 더 꺼내서 닦았습니다."], "60": ["아기가 태어나는 날이었습니다.", "단이는 분만실 앞에서 서성이었습니다.", "열 걸음 갔다가 돌아오고.", "열 걸음 갔다가 돌아오고.", "옆에 있던 봄이가 말했습니다.", "단이야?", "좀 앉아.", "단이가 앉았습니다.", "다섯 초 만에 일어났습니다.", "봄이가 웃었습니다.", "동이가 봄이한테 작은 목소리로 말했습니다.", "봄이야.", "나 저 모습 어디서 봤는데?"], "61": ["봄이가 동이를 봤습니다.", "어디서 봤어?", "오래 전에.", "두 사람이 눈을 마주쳤습니다.", "그리고 같이 웃었습니다.", "굴 안에서 소리가 났습니다.", "앙앙.", "단이가 그 소리를 들었습니다.", "눈에서 뭔가 흘렀습니다.", "단이가 달렸습니다.", "앞에 있는 나무 쪽으로.", "봄이가 외쳤습니다.", "나무.", "단이가 나무에 이마를 박았습니다."], "62": ["동이가 고개를 저었습니다.", "저 녀석이 나를 닮았어?", "단이가 아이를 처음 안은 것은 그날 저녁이었습니다.", "작은 아기였습니다.", "검은 털이 복실복실한.", "아주 작은 곰 아기였습니다.", "단이가 아이를 안았습니다.", "아이가 눈을 꼭 감고 있었습니다.", "코가 조금 뭉툭했습니다.", "손이 아주 작았습니다.", "단이가 손가락 하나를 내밀었습니다.", "아이가 그 손가락을 잡았습니다."], "63": ["작은 손으로.", "꼭 잡았습니다.", "그 순간이었습니다.", "단이 머리 속에 뭔가가 스쳐 지나갔습니다.", "아주 오래된 장면들이었습니다.", "새벽 네 시에 불이 켜진 부엌.", "열이 날 때 밤새 이마를 짚어 주던 손.", "학교 첫날 문 앞에서 엄마 꼬리를 잡았던 그 꼬리.", "버스 뒤로 200 미터를 뛰어오던 아빠.", "눈길에서 무릎을 다치면서도 항아리를 놓지 않던 할머니.", "매일 언덕에 올라 내려다보던 거북이 할아버지."], "64": ["단이는 지금까지 그 모든 것을 알고 있었습니다.", "알고 있었지만 느끼지 못했습니다.", "그런데 지금 이 순간.", "이 작은 손가락 다섯 개가 자신의 손가락을 잡는 이 순간.", "단이는 처음으로 느꼈습니다.", "봄이가 어떤 마음이었는지를.", "동이가 어떤 마음이었는지를.", "할머니 곰이 눈길을 걸어오면서 어떤 마음이었는지를.", "거북이 할아버지가 언덕에서 어떤 마음으로 내려다 봤는지를.", "단이 눈에서 눈물이 흘렀습니다."], "65": ["아이 아내가 물었습니다.", "왜 울어?", "단이가 한참 있다가 말했습니다.", "이제 알았어?", "뭘?", "엄마가 왜 새벽 네 시에 일어났는지를.", "아내가 단이를 봤습니다.", "아빠가 왜 스무 번이나 잘 먹으라고 했는지를.", "할머니가 왜 눈길을 걸어왔는지를.", "이제 알았어?", "단이가 아이를 안으면서 말했습니다.", "이렇게 작은 것 때문에.", "이렇게 작은 것 하나 때문에."], "66": ["다 할 수 있는 거였어?", "여러분.", "이 순간.", "여러분도 그런 순간이 있으셨습니까?", "자식이 부모 마음을 처음으로 이해한 순간.", "손자 손녀가 태어나서.", "자식이 전화를 해 온 날.", "그날 생각나십니까?", "그날 이야기가 끝났습니다.", "단이가 아이를 재우면서 새벽 두시가 됐습니다.", "아이가 잠들었습니다.", "단이가 핸드폰을 들었습니다.", "봄이 번호를 눌렀습니다."], "67": ["신호가 같습니다.", "1번 만에 받았습니다.", "단이야.", "봄이 목소리였습니다.", "단이가 물었습니다.", "엄마, 안 자고 있었어?", "아니 자고 있었어?", "거짓말.", "한 번에 받았잖아.", "봄이가 웃었습니다.", "조금 깨어 있었어?", "단이가 잠깐 아무 말도 하지 않았습니다.", "그리고 말했습니다.", "엄마.", "나 아이 낳았잖아."], "68": ["응 알아?", "엄마가 나 낳을 때 이런 기분이었어?", "봄이가 전화 너머에서 잠깐 조용했습니다.", "응.", "이렇게 작은데 이렇게 무서워?", "이렇게 작은데 이렇게 좋아?", "응.", "단이가 아이를 내려다봤습니다.", "엄마.", "그동안 고마워.", "진짜로?", "봄이가 아무 말도 하지 않았습니다.", "전화 너머에서 조용했습니다."], "69": ["그러다가 봄이 목소리가 들렸습니다.", "응.", "엄마가 그 말 기다렸어?", "응.", "기다렸어?", "오래.", "봄이 목소리가 떨렸습니다.", "단이 눈에서 눈물이 흘렀습니다.", "엄마 울어?", "응 울어.", "기뻐서?", "여러분.", "자식한테 그 말을 들으신 적 있으십니까?", "엄마, 고마워.", "아빠.", "고마워."], "70": ["그 말을 기다리고 계십니까?", "기다리고 계시다면?", "조금만 더 기다려 주십시오.", "반드시 옵니다.", "기다리다 지치셨다면?", "이 이야기가 그 대신이 됐으면 합니다.", "여덟 번째 이야기 — 돌아가는 길.", "단이가 아이를 안고 다사랑 숲으로 돌아갔습니다.", "봄이가 문을 열었습니다.", "단이가 들어오는 것을 봤습니다.", "그리고 단이 품에 있는 것을 봤습니다."], "71": ["봄이가 아무 말도 하지 않았습니다.", "그냥 손으로 입을 막았습니다.", "눈에서 눈물이 흘렀습니다.", "단이가 말했습니다.", "엄마 인사해.", "이게 우리 아이야?", "봄이가 손을 뻗었습니다.", "아이의 볼을 손가락으로 건드렸습니다.", "봄이가 웃었습니다.", "소리가 없는 웃음이었습니다.", "눈물이 흐르는데 웃고 있었습니다.", "예쁘다.", "목소리가 떨렸습니다."], "72": ["동이가 나왔습니다.", "아이를 봤습니다.", "동이가 무릎을 꿇었습니다.", "아이 눈높이에서 아이를 봤습니다.", "안녕.", "나 할아버지야?", "그 말을 하는 순간.", "동이 눈에서 눈물이 떨어졌습니다.", "나 안 울어.", "그러면서 울었습니다.", "단이가 웃었습니다.", "아빠 울잖아.", "안 울어.", "눈에 뭐 들어간 거야?", "봄이가 동이 등을 두드렸습니다."], "73": ["괜찮아?", "울어.", "동이가 더 크게 울었습니다.", "할머니 곰이 왔습니다.", "오래 쌓아뒀던 꿀 항아리들을 전부 들고 왔습니다.", "할머니, 이게 다 뭐야?", "내가 안 와서 사놓은 거야?", "다 가져가.", "단이가 항아리들을 봤습니다.", "오래된 것들이었습니다.", "먼지가 닦인 흔적이 있었습니다.", "할머니 이거 오래됐는데?", "닦았어?", "괜찮아?"], "74": ["단이가 할머니 손을 잡았습니다.", "할머니.", "응.", "고마워.", "할머니 곰이 단이 손을 꼭 잡았습니다.", "고맙긴.", "네 덕분에 내가 살았지?", "네 덕분에.", "네 생각 하면서 살았어?", "단이 오면 줘야지.", "단이 보고 싶다.", "그러면서.", "단이가 할머니를 안았습니다.", "할머니 곰이 단이 등을 토닥였습니다.", "잘 왔어?", "여러분."], "75": ["이 두 마디.", "가슴에 닿으십니까?", "네 덕분에 내가 살았지?", "잘 왔어?", "자식이 오면?", "손자 손녀가 오면.", "그게 다입니다.", "그것만으로 됩니다.", "할아버지 곰이 아이를 봤습니다.", "오랫동안 봤습니다.", "그리고 아주 작은 목소리로 말했습니다.", "이름 뭐야?", "할아버지, 아직 못 지었어?", "할아버지 곰이 아이 손을 잡았습니다."], "76": ["아이가 할아버지 손가락을 잡았습니다.", "할아버지 곰이 웃었습니다.", "귀가 안 들려도.", "무릎이 안 좋아도.", "보청기를 꿀 항아리에 넣어둬도.", "그 웃음은 다사랑 숲에서 가장 환한 웃음이었습니다.", "그날 저녁이었습니다.", "단이가 봄이한테 말했습니다.", "엄마.", "응?", "나 미안해.", "봄이가 단이를 봤습니다.", "뭐가?", "명절에 못 간 것도.", "전화 자주 못한 것도."], "77": ["학교 앞의 할머니 오지 말라고 한 것도.", "엄마 운동회 구석에 앉으라고 한 것도.", "봄이가 잠깐 있다가 말했습니다.", "다 기억해?", "응, 괜찮아?", "괜찮지 않았을 텐데?", "봄이가 단이 손을 잡았습니다.", "괜찮았어?", "진짜로?", "내가 그럴 나이였으니까.", "그래도.", "단이야.", "지금 이렇게 오면 돼.", "이렇게 오는 거면 다 괜찮아?"], "78": ["단이 눈에서 눈물이 흘렀습니다.", "봄이도 눈물이 흘렀습니다.", "두 곰이 잠깐 그렇게 앉아 있었습니다.", "여러분.", "이 말?", "지금 오면 돼 이렇게 오면 다 괜찮아?", "이 말을 해주고 싶은 분이 계십니까?", "이 말을 듣고 싶은 분이 계십니까?", "다음날 새벽이었습니다.", "단이가 새벽에 일어났습니다.", "아이가 울어서 일어났습니다.", "아이를 달래다보니 새벽 네 시가 됐습니다."], "79": ["부엌에 불이 켜져 있었습니다.", "봄이가 거기 있었습니다.", "엄마 왜 일어났어?", "단이 아이 밥 만들려고", "엄마.", "아직 이른데?", "아기가 배고프면 미리 준비해야지.", "단이가 봄이 옆에 섰습니다.", "부엌 창밖이 아직 어두웠습니다.", "봄이가 혼자 뭔가를 만들고 있었습니다.", "단이가 그 옆에 섰습니다.", "엄마 나도 할게.", "봄이가 단이를 봤습니다."], "80": ["됐어?", "사.", "엄마가 할 거잖아?", "엄마가 할 거야?", "같이 해.", "봄이가 잠깐 단이를 봤습니다.", "그리고 웃으면서 자리를 조금 내줬습니다.", "두 곰이 새벽 네 시에 나란히 섰습니다.", "창밖에서 해가 조금씩 오르기 시작했습니다.", "여러분.", "이 새벽이?", "얼마나 따뜻한 새벽인지?", "아시겠습니까?", "새벽 네 시.", "엄마 옆에 선 아이."], "81": ["그게 다입니다.", "그것이 전부입니다.", "사랑이 돌아온 겁니다.", "아홉 번째 이야기 — 거북이 할아버지.", "단이가 거북이 할아버지를 찾아갔습니다.", "오소리 선생한테서 이야기를 들었습니다.", "아들이 오래 연락이 없대.", "매일 언덕에 올라간다더라.", "단이가 거북이 할아버지 집을 찾아갔습니다.", "노크를 했습니다.", "오랫동안 반응이 없었습니다.", "그러다가 문이 열렸습니다.", "거북이 할아버지가 나왔습니다."], "82": ["오랫동안 혼자 산 얼굴이었습니다.", "누구요?", "저 단이에요.", "곰집 단이요?", "들어와도 될까요?", "거북이 할아버지 집안에 들어가 보니.", "밥상이 두 개 있었습니다.", "하나는 할아버지 것이고.", "하나는 비어 있었습니다.", "단이가 그 밥상을 봤습니다.", "할아버지.", "저 밥상은요?", "거북이 할아버지가 잠깐 있다가 말했습니다.", "아들 것이야."], "83": ["아드님이 오세요?", "모르겠어?", "올 수도 있잖아.", "단이가 그 밥상을 봤습니다.", "먼지가 없었습니다.", "매일 닦는 것이었습니다.", "단이가 말했습니다.", "할아버지.", "저 오늘 여기서 밥 먹어도 될까요?", "거북이 할아버지가 단이를 봤습니다.", "왜요?", "그냥요.", "같이 먹고 싶어서요?", "거북이 할아버지가 잠깐 있다가 말했습니다.", "그래요?", "단이가 아들 몫 밥상에 앉았습니다."], "84": ["두 사람이 밥을 먹었습니다.", "처음에는 아무 말도 없었습니다.", "그러다가 거북이 할아버지가 아주 작은 목소리로 말했습니다.", "우리 아들도.", "아이가 생겼을지 모르겠어요.", "오래돼서 모르겠어?", "연락이 없으니.", "단이가 밥을 먹다가 멈췄습니다.", "할아버지.", "응.", "아드님, 연락처 아세요?", "있는데.", "연락이 안 되더라고.", "제가 한번 찾아봐도 될까요?"], "85": ["거북이 할아버지가 단이를 봤습니다.", "눈이 흔들렸습니다.", "괜찮겠어요?", "네.", "단이가 열심히 찾았습니다.", "칠보 아저씨한테 부탁했습니다.", "이 장터 저 장터를 돌며 거북이 아들 소식을 물었습니다.", "열흘이 지났습니다.", "칠보가 소식을 갖고 왔습니다.", "거북이 아드님.", "멀리 가서 자리잡고 있소.", "연락이 끊긴 것은 잘못이었다고 생각하는데."], "86": ["어떻게 해야 할지 몰랐다더군.", "단이가 편지를 썼습니다.", "거북이 할아버지가 매일 언덕에 올라간다고?", "밥상을 두 개 차린다고?", "아들 신발을 닦아둔다고?", "그 편지를 보냈습니다.", "한 달 뒤였습니다.", "거북이 할아버지가 언덕에 올라갔습니다.", "오늘도 내려다봤습니다.", "그런데 오늘은 달랐습니다.", "숲 입구에서 누군가 걸어오고 있었습니다.", "걸음걸이가 이상했습니다.", "왼쪽 발을 조금 질질 끄는 걸음이었습니다."], "87": ["거북이 할아버지가 눈을 비볐습니다.", "다시 봤습니다.", "그 걸음이었습니다.", "거북이 할아버지가 일어났습니다.", "언덕에서 내려갔습니다.", "무릎이 좋지 않아서 천천히 내려갔습니다.", "내려가면서 넘어질 뻔했지만 일어났습니다.", "숲 입구에 도착했습니다.", "거기 서 있었습니다.", "거북이 아들이었습니다.", "머리가 희어졌습니다.", "주름이 생겼습니다."], "88": ["많이 늙었습니다.", "그런데 왼쪽 발을 조금 끄는 걸음걸이는 그대로였습니다.", "아버지를 봤습니다.", "아버지.", "거북이 할아버지가 한 발 내딛었습니다.", "아무 말도 하지 않았습니다.", "그냥 아들 앞에 서 있었습니다.", "아들이 고개를 숙였습니다.", "죄송합니다.", "거북이 할아버지가 아들 어깨를 잡았습니다.", "됐어?", "아버지.", "됐다고?", "왔잖아.", "여러분."], "89": ["이 두 마디.", "됐어?", "왔잖아.", "얼마나 긴 기다림 끝에 나온 말인지?", "아시겠습니까?", "기다리고 기다리고 또 기다리다가.", "드디어 왔을 때.", "그 말 하나면 됩니다.", "됐어?", "왔잖아.", "그게 부모입니다.", "이 장면을 본 것은 단이였습니다.", "멀리서 봤습니다.", "개입하지 않았습니다.", "그냥 봤습니다.", "그리고 집으로 돌아가는 길에."], "90": ["봄이한테 전화했습니다.", "엄마.", "응 단이야.", "오늘 거북이 할아버지 아들 왔어?", "정말?", "잘됐다.", "응?", "잠깐 조용했습니다.", "엄마.", "응 나 이번 주말에 가도 돼?", "봄이가 웃었습니다.", "당연하지?", "밥 해놓을게.", "엄마 이제 내가 할게.", "엄마 쉬어?", "됐어?"], "91": ["엄마가 하는게 더 맛있어?", "엄마.", "알겠어?", "같이해.", "단이도 웃었습니다.", "마지막 이야기 — 꿀 항아리와 엄마 꼬리.", "봄이 왔습니다.", "다사랑 숲에 꽃이 폈습니다.", "할머니 곰이 쌓아둔 꿀 항아리를 하나씩 꺼냈습니다.", "닦았습니다.", "깨끗하게 닦았습니다.", "오래된 것들이었습니다.", "몇 년 된 것도 있었습니다.", "그런데 꿀은 오래될수록 더 달아진다고 했습니다."], "92": ["할머니 곰이 단이를 불렀습니다.", "단이야, 이리 와봐.", "단이가 왔습니다.", "아이를 안고 왔습니다.", "할머니 곰이 항아리를 하나 열었습니다.", "꿀향기가 퍼졌습니다.", "달콤하고 진한 향기였습니다.", "할머니 곰이 아이에게 꿀을 조금 내밀었습니다.", "아이가 먹었습니다.", "눈을 동그랗게 뜨면서 먹었습니다.", "할머니 곰이 웃었습니다.", "맛있지?", "아이가 더 달라는 듯 입을 벌렸습니다."], "93": ["할머니 곰이 더 줬습니다.", "그리고 단이한테 말했습니다.", "응 할머니.", "이 항아리들 다 가져가.", "할머니, 이게 얼마나 많은데?", "네 아이 주려고 모은 거야?", "가져가.", "단이가 항아리들을 봤습니다.", "많았습니다.", "정말 많았습니다.", "단이가 할머니 손을 잡았습니다.", "할머니.", "응.", "오래오래 사."], "94": ["할머니 곰이 웃었습니다.", "알아?", "단이 아이가 커서 내 손 잡아줄 때까지는 살아야지.", "여러분.", "오래오래 사세요.", "손자 손녀가 할머니 손 잡아줄 때까지.", "증손자 증손녀가 할머니 손 잡아줄 때까지.", "오래오래 사세요.", "그날 저녁 단이가 아이를 재우면서.", "봄이가 들어왔습니다.", "아이 옆에 앉았습니다.", "봄이가 아이 얼굴을 봤습니다."], "95": ["응.", "이 아이 있잖아.", "이 아이도 언젠가 바빠질 거야.", "전화 안 하는 날도 있을 거고.", "명절에 못 오는 날도 있을 거야.", "단이가 아이를 봤습니다.", "그때 너무 서운해하지 마.", "바쁜거니까.", "단이가 봄이를 봤습니다.", "엄마.", "응?", "엄마는 안 서운했어?", "진짜로?", "봄이가 잠깐 있다가 말했습니다.", "서운했어."], "96": ["그런데 있잖아 단이야.", "서운한 것보다 네가 잘 살고 있는 게 더 좋았어.", "그게 더 컸어?", "단이가 아이를 내려다봤습니다.", "나도 그럴 수 있을까?", "봄이가 말했습니다.", "할 수 있어?", "어떻게 알아?", "네가 나한테 배웠으니까.", "여러분.", "서운한 것보다 네가 잘 살고 있는 게 더 좋았어.", "이 말?", "부모만 할 수 있는 말입니다.", "자식보다 자식이 잘 되는 것을 더 좋아하는 것."], "97": ["그게 부모입니다.", "아이가 잠들었습니다.", "봄이와 단이가 조용히 방을 나왔습니다.", "마루에 앉았습니다.", "마당에 별이 많이 떴습니다.", "둘이 나란히 별을 봤습니다.", "한참 동안 아무 말도 하지 않았습니다.", "그러다가 단이가 말했습니다.", "엄마.", "응, 엄마 꼬리 잡아도 돼?", "봄이가 단이를 봤습니다.", "눈이 조금 빨개졌습니다."], "98": ["뭐라고?", "어릴 때 내가 엄마 꼬리 잡고 걸었잖아.", "그거 기억나?", "봄이가 아무 말도 하지 않았습니다.", "그러다가 자리를 조금 단이 쪽으로 당겼습니다.", "잡아.", "단이가 봄이 꼬리를 잡았습니다.", "여전히 폭신했습니다.", "여전히 따뜻했습니다.", "단이가 눈을 감았습니다.", "봄이가 단이 머리를 쓰다듬었습니다.", "별이 총총한 밤에.", "엄마와 아이가 나란히 앉아 있었습니다."], "99": ["방안에서는 아이가 자고 있었습니다.", "꼭 감은 눈.", "조금 뭉툭한 코.", "작은 손.", "아이는 자면서 손가락을 움직였습니다.", "무언가를 잡으려는 듯.", "사랑은 위에서 아래로 흘렀습니다.", "할머니에서 아빠로.", "아빠에서 단이로.", "단이에서 아이로.", "그리고 언젠가.", "아이가 자라면?", "단이 꼬리를 잡고 걸을 것입니다.", "그리고 또 언젠가."], "100": ["그 아이도 이 밤처럼.", "자기 아이를 재우고.", "엄마 꼬리를 잡을 것입니다.", "사랑은 반드시 돌아옵니다.", "위로.", "그것이 이 세상에서 가장 아름다운 일입니다.", "여러분.", "이것이 다사랑 숲의 이야기입니다.", "곰 가족의 이야기.", "거북이 할아버지의 이야기.", "그리고 어쩌면.", "여러분의 이야기.", "이 이야기를 들으시면서.", "누군가의 얼굴이 떠오르셨나요?"], "101": ["새벽에 일어나서 밥을 차려주시던 분.", "눈길을 걸어서라도 오시던 분.", "아니면?", "지금도 기다리고 계신 분?", "그분이 지금 어디 계신지 아시지요?", "오늘.", "전화 한통 드리세요.", "뭐라고 해야 할지 모르시겠으면.", "이렇게만 하세요?", "밥 먹었어요?", "그 말 한 마디면 됩니다.", "그분은 지금도 기다리고 계십니다.", "첫 번째 신호에 받으실 겁니다."], "102": ["자고 있지 않으셨을 테니까요.", "여러분.", "오늘도 고생 많으셨습니다.", "살면서 많이 주셨습니다.", "많이 참으셨습니다.", "많이 기다리셨습니다.", "그 사랑이 헛되지 않습니다.", "반드시 돌아옵니다.", "오늘 밤.", "편안히 주무십시오.", "초가등불이었습니다.", "🐾.", "잘 주무십시오."]};
+
+// ══════════════════════════════════════════════════════════════════
+// 화면 전환
+// ══════════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goHome() {
+  const audio = document.getElementById('main-audio');
+  audio.pause();
+  showScreen('title-screen');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 웹툰 모드
+// ══════════════════════════════════════════════════════════════════
+let wtPage = 1;
+const WT_PAGE_SIZE = 10; // 한 번에 보여줄 씬 수
+
+function startWebtoon() {
+  showScreen('webtoon-screen');
+  wtPage = 1;
+  renderWebtoon();
+}
+
+function renderWebtoon() {
+  const container = document.getElementById('webtoon-container');
+  container.innerHTML = '';
+
+  const start = (wtPage - 1) * WT_PAGE_SIZE + 1;
+  const end   = Math.min(wtPage * WT_PAGE_SIZE, TOTAL_IMAGES);
+
+  for (let i = start; i <= end; i++) {
+    const block = document.createElement('div');
+    block.className = 'scene-block';
+    block.id = 'scene-' + i;
+
+    const imgNum = String(i).padStart(3, '0');
+    const textsArr = IMAGE_SUBS[i] || [];
+
+    let subsHtml = '';
+    if (textsArr.length > 0) {
+      subsHtml = textsArr.map(t => `<div class="scene-line">${t}</div>`).join('');
+    } else {
+      subsHtml = '<div class="scene-empty">[ 자막 없음 ]</div>';
+    }
+
+    block.innerHTML = `
+      <div class="scene-img">
+        <img src="images/${imgNum}.jpg"
+             alt="씬 ${i}"
+             loading="lazy"
+             onerror="this.style.display='none'">
+      </div>
+      <div class="scene-subs">
+        <div class="scene-num">씬 ${imgNum}</div>
+        ${subsHtml}
+      </div>`;
+    container.appendChild(block);
+  }
+
+  // 엔딩 카드
+  if (end === TOTAL_IMAGES) {
+    container.appendChild(makeEndingCard('webtoon'));
+  }
+
+  document.getElementById('wt-progress').textContent =
+    `${start}~${end} / ${TOTAL_IMAGES}`;
+  document.getElementById('wt-prev').disabled = (wtPage === 1);
+  document.getElementById('wt-next').disabled =
+    (end === TOTAL_IMAGES);
+
+  window.scrollTo(0, 0);
+}
+
+function wtNav(dir) {
+  const maxPage = Math.ceil(TOTAL_IMAGES / WT_PAGE_SIZE);
+  wtPage = Math.max(1, Math.min(wtPage + dir, maxPage));
+  renderWebtoon();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 오디오북 모드
+// ══════════════════════════════════════════════════════════════════
+let abPage = 1;
+const AB_PAGE_SIZE = 10;
+let abCurrentImg = 1;
+let isScrollingToImage = false;
+
+function startAudiobook() {
+  showScreen('audiobook-screen');
+  abPage = 1;
+  abCurrentImg = 1;
+  renderAudiobook();
+}
+
+function renderAudiobook() {
+  const container = document.getElementById('ab-container');
+  container.innerHTML = '';
+
+  const start = (abPage - 1) * AB_PAGE_SIZE + 1;
+  const end   = Math.min(abPage * AB_PAGE_SIZE, TOTAL_IMAGES);
+
+  for (let i = start; i <= end; i++) {
+    const block = document.createElement('div');
+    block.className = 'ab-scene';
+    block.id = 'ab-scene-' + i;
+
+    const imgNum = String(i).padStart(3, '0');
+    block.innerHTML = `<img src="images/${imgNum}.jpg"
+                            alt="씬 ${i}" loading="lazy"
+                            onerror="this.style.display='none'">`;
+    container.appendChild(block);
+  }
+
+  if (end === TOTAL_IMAGES) {
+    container.appendChild(makeEndingCard('audiobook'));
+  }
+
+  document.getElementById('ab-progress').textContent =
+    `${start}~${end} / ${TOTAL_IMAGES}`;
+  document.getElementById('ab-prev').disabled = (abPage === 1);
+  document.getElementById('ab-next').disabled = (end === TOTAL_IMAGES);
+
+  window.scrollTo(0, 0);
+}
+
+function abNav(dir) {
+  const maxPage = Math.ceil(TOTAL_IMAGES / AB_PAGE_SIZE);
+  abPage = Math.max(1, Math.min(abPage + dir, maxPage));
+  renderAudiobook();
+}
+
+// ── 오디오 제어 ──────────────────────────────────────────────────
+const audio = document.getElementById('main-audio');
+
+function togglePlay() {
+  if (audio.paused) {
+    audio.play();
+    document.getElementById('play-btn').textContent = '⏸';
+  } else {
+    audio.pause();
+    document.getElementById('play-btn').textContent = '▶';
+  }
+}
+
+function seekTo(val) {
+  audio.currentTime = parseFloat(val);
+}
+
+let muted = false;
+function toggleMute() {
+  muted = !muted;
+  audio.muted = muted;
+  document.getElementById('vol-btn').textContent = muted ? '🔇' : '🔊';
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+audio.addEventListener('timeupdate', () => {
+  const ct = audio.currentTime;
+  document.getElementById('seek-bar').value = ct;
+  document.getElementById('audio-time').textContent =
+    `${formatTime(ct)} / ${formatTime(TOTAL_DURATION)}`;
+
+  updateSubtitle(ct);
+  updateImageSync(ct);
+});
+
+audio.addEventListener('ended', () => {
+  document.getElementById('play-btn').textContent = '▶';
+});
+
+// ── 자막 동기화 ──────────────────────────────────────────────────
+let lastSubIdx = -1;
+
+function updateSubtitle(ct) {
+  let found = -1;
+  for (let i = 0; i < SUBS.length; i++) {
+    if (ct >= SUBS[i].start && ct < SUBS[i].end) {
+      found = i;
+      break;
+    }
+  }
+  if (found === lastSubIdx) return;
+  lastSubIdx = found;
+  const overlay = document.getElementById('subtitle-overlay');
+  const subText = document.getElementById('sub-text');
+  if (found >= 0) {
+    subText.textContent = SUBS[found].text;
+    overlay.style.opacity = '1';
+  } else {
+    overlay.style.opacity = '0';
+  }
+}
+
+// ── 이미지 자동 스크롤 ───────────────────────────────────────────
+function updateImageSync(ct) {
+  const imgIdx = Math.min(
+    Math.floor(ct / DUR_PER_IMAGE) + 1,
+    TOTAL_IMAGES
+  );
+  if (imgIdx === abCurrentImg) return;
+  abCurrentImg = imgIdx;
+
+  // 페이지 전환 필요?
+  const pageOfImg = Math.ceil(imgIdx / AB_PAGE_SIZE);
+  if (pageOfImg !== abPage) {
+    abPage = pageOfImg;
+    renderAudiobook();
+  }
+
+  // 해당 씬으로 스크롤
+  const el = document.getElementById('ab-scene-' + imgIdx);
+  if (el && !isScrollingToImage) {
+    isScrollingToImage = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => { isScrollingToImage = false; }, 1000);
+  }
+
+  document.getElementById('ab-progress').textContent =
+    `${imgIdx} / ${TOTAL_IMAGES}`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 엔딩 카드
+// ══════════════════════════════════════════════════════════════════
+function makeEndingCard(mode) {
+  const div = document.createElement('div');
+  div.className = 'ending-card';
+  div.innerHTML = `
+    <span class="ending-paw">🐾</span>
+    <div class="ending-title">사랑은 반드시 돌아옵니다</div>
+    <div class="ending-sub">오늘, 전화 한 통 드리세요.</div>
+    <div class="ending-btns">
+      <button class="ending-btn btn-restart"
+        onclick="${mode === 'webtoon' ? 'wtPage=1;renderWebtoon()' : 'audio.currentTime=0;abPage=1;renderAudiobook()'}"
+      >처음부터 다시 보기</button>
+      <button class="ending-btn btn-home-end" onclick="goHome()">모드 선택으로</button>
+    </div>`;
+  return div;
+}
+</script>
+</body>
+</html>
