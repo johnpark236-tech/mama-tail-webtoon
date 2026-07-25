@@ -503,6 +503,7 @@ body {
     <button class="sync-btn" id="ab-img-prev" onclick="adjustImgSync(-1)" title="이미지 1장 뒤로">이미지전</button>
     <button class="sync-btn" id="ab-img-next" onclick="adjustImgSync(1)" title="이미지 1장 앞으로">이미지후</button>
     <button class="save-btn" onclick="saveImgSync()">💾 저장</button>
+    <button class="save-btn" style="background:#c0392b;color:#fff;" onclick="downloadMP4()">MP4 다운로드</button>
   </nav>
   <div id="sync-indicator"></div>
 </div>
@@ -517,6 +518,7 @@ body {
     </div>
   </div>
 </div>
+<div id="mp4-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:10000;align-items:center;justify-content:center;flex-direction:column;"><div style="background:#1e1e2e;border:1px solid #f5c842;border-radius:16px;padding:28px;max-width:320px;width:90%;text-align:center;"><div style="color:#f5c842;font-size:1rem;font-weight:bold;margin-bottom:16px;">MP4 영상 생성 중</div><div id="mp4-msg" style="color:#a0aec0;font-size:0.85rem;margin-bottom:14px;min-height:36px;line-height:1.5;">준비 중...</div><div style="background:#2a2a3e;border-radius:8px;height:12px;overflow:hidden;margin-bottom:14px;"><div id="mp4-bar" style="height:100%;background:#f5c842;width:0%;transition:width 0.3s;border-radius:8px;"></div></div><div id="mp4-pct" style="color:#f5c842;font-size:0.85rem;margin-bottom:16px;">0%</div><button onclick="cancelMp4()" style="background:#2a2a3e;color:#a0aec0;border:1px solid #4a4a6a;border-radius:8px;padding:8px 20px;cursor:pointer;">취소</button></div></div>
 <div id="save-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#1e1e2e;border:1px solid #f5c842;border-radius:14px;padding:28px 32px;max-width:320px;width:90%;text-align:center;">
     <div id="save-popup-text" style="color:#e2e8f0;font-size:0.95rem;line-height:1.8;white-space:pre-line;"></div>
@@ -862,6 +864,245 @@ function loadSettings() {
   var ab = localStorage.getItem('abFontSize');
   if (wt !== null) wtFontSize = parseFloat(wt);
   if (ab !== null) abFontSize = parseFloat(ab);
+}
+
+
+// ── MP4 다운로드 ────────────────────────────────────────────────
+var _ffmpegInst = null;
+var _mp4Cancelled = false;
+
+function cancelMp4() {
+  _mp4Cancelled = true;
+  document.getElementById('mp4-overlay').style.display = 'none';
+}
+
+function setMp4Progress(msg, pct) {
+  document.getElementById('mp4-msg').textContent = msg;
+  document.getElementById('mp4-bar').style.width = Math.round(pct) + '%';
+  document.getElementById('mp4-pct').textContent = Math.round(pct) + '%';
+}
+
+function wrapText(ctx, text, maxWidth) {
+  var chars = text.split('');
+  var lines = [];
+  var cur = '';
+  for (var i = 0; i < chars.length; i++) {
+    var test = cur + chars[i];
+    if (ctx.measureText(test).width > maxWidth && cur.length > 0) {
+      lines.push(cur);
+      cur = chars[i];
+    } else {
+      cur = test;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+async function downloadMP4() {
+  _mp4Cancelled = false;
+  var overlay = document.getElementById('mp4-overlay');
+  overlay.style.display = 'flex';
+  setMp4Progress('FFmpeg \ub85c\ub529 \uc911... (\ucd5c\ucd08 1\ud68c \uc57d 30MB \ub2e4\uc6b4\ub85c\ub4dc)', 2);
+
+  try {
+    // ── FFmpeg \ub85c\ub4dc ────────────────────────────────────────────
+    if (!_ffmpegInst) {
+      await new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
+        s.onload = resolve;
+        s.onerror = function() { reject(new Error('FFmpeg \ub85c\ub4dc \uc2e4\ud328. \ub124\ud2b8\uc6cc\ud06c\ub97c \ud655\uc778\ud574\uc8fc\uc138\uc694.')); };
+        document.head.appendChild(s);
+      });
+      if (_mp4Cancelled) return;
+
+      var FFmpegLib = window.FFmpegWASM || window.FFmpeg;
+      var ffmpeg = new FFmpegLib.FFmpeg();
+
+      setMp4Progress('FFmpeg \ucf54\uc5b4 \ub2e4\uc6b4\ub85c\ub4dc \uc911...', 5);
+      var BASE = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/';
+      var jsResp = await fetch(BASE + 'ffmpeg-core.js');
+      var wasmResp = await fetch(BASE + 'ffmpeg-core.wasm');
+      if (_mp4Cancelled) return;
+
+      setMp4Progress('FFmpeg WASM \ub85c\ub529 \uc911...', 12);
+      var coreURL = URL.createObjectURL(new Blob([await jsResp.arrayBuffer()], {type: 'text/javascript'}));
+      var wasmURL = URL.createObjectURL(new Blob([await wasmResp.arrayBuffer()], {type: 'application/wasm'}));
+      await ffmpeg.load({ coreURL: coreURL, wasmURL: wasmURL });
+      _ffmpegInst = ffmpeg;
+    }
+    var ffmpeg = _ffmpegInst;
+    if (_mp4Cancelled) return;
+
+    // ── \uc138\uadf8\uba3c\ud2b8 \uacc4\uc0b0 ──────────────────────────────────────────
+    setMp4Progress('\uc138\uadf8\uba3c\ud2b8 \uacc4\uc0b0 \uc911...', 18);
+    var pts = new Set([0, TOTAL_DURATION]);
+    IMAGE_TIMELINE.forEach(function(t) { pts.add(t); });
+    SUBS.forEach(function(s) { pts.add(s.start); pts.add(Math.min(s.end, TOTAL_DURATION)); });
+    var sorted = Array.from(pts).sort(function(a, b) { return a - b; });
+
+    var segments = [];
+    for (var pi = 0; pi < sorted.length - 1; pi++) {
+      var ts = sorted[pi], te = sorted[pi + 1];
+      var dur = te - ts;
+      if (dur < 0.05) continue;
+
+      var imgIdx = 1;
+      for (var j = 0; j < IMAGE_TIMELINE.length; j++) {
+        if (ts >= IMAGE_TIMELINE[j]) imgIdx = j + 1; else break;
+      }
+      imgIdx = Math.max(1, Math.min(TOTAL_IMAGES, imgIdx + abImgOffset));
+
+      var sub = null;
+      for (var j = 0; j < SUBS.length; j++) {
+        if (ts >= SUBS[j].start && ts < SUBS[j].end) { sub = SUBS[j].text; break; }
+      }
+      segments.push({ img: imgIdx, sub: sub, dur: dur });
+    }
+
+    // ── \uace0\uc720 \ud504\ub808\uc784 \ubaa9\ub85d ───────────────────────────────────────
+    var uniq = [];
+    var seenK = {};
+    for (var si = 0; si < segments.length; si++) {
+      var seg = segments[si];
+      var k = seg.img + '|' + (seg.sub || '');
+      if (!seenK[k]) {
+        seenK[k] = 'f' + uniq.length + '.jpg';
+        uniq.push({ img: seg.img, sub: seg.sub, k: k, fname: seenK[k] });
+      }
+    }
+
+    // ── \uce94\ubc84\uc2a4 \ub80c\ub354\ub9c1 ───────────────────────────────────────────
+    var canvas = document.createElement('canvas');
+    canvas.width = 720; canvas.height = 1280;
+    var ctx = canvas.getContext('2d');
+    var imgCache = {};
+
+    function loadImg(idx) {
+      if (imgCache[idx]) return Promise.resolve(imgCache[idx]);
+      return new Promise(function(res) {
+        var im = new Image();
+        im.crossOrigin = 'anonymous';
+        im.onload = function() { imgCache[idx] = im; res(im); };
+        im.onerror = function() { res(null); };
+        im.src = 'images/' + String(idx).padStart(3, '0') + '.jpg';
+      });
+    }
+
+    function toU8() {
+      return new Promise(function(res) {
+        canvas.toBlob(function(blob) {
+          var reader = new FileReader();
+          reader.onloadend = function() { res(new Uint8Array(reader.result)); };
+          reader.readAsArrayBuffer(blob);
+        }, 'image/jpeg', 0.82);
+      });
+    }
+
+    for (var ui = 0; ui < uniq.length; ui++) {
+      if (_mp4Cancelled) return;
+      var u = uniq[ui];
+      setMp4Progress('\ud504\ub808\uc784 \uc0dd\uc131 ' + (ui+1) + '/' + uniq.length, 20 + (ui / uniq.length) * 38);
+
+      var im = await loadImg(u.img);
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, 720, 1280);
+
+      var subH = u.sub ? 110 : 0;
+      if (im) {
+        var sc = Math.min(720 / im.width, (1280 - subH - 10) / im.height);
+        var w = im.width * sc, h = im.height * sc;
+        ctx.drawImage(im, (720 - w) / 2, (1280 - subH - h) / 2, w, h);
+      }
+
+      if (u.sub) {
+        ctx.fillStyle = 'rgba(0,0,0,0.80)';
+        ctx.fillRect(0, 1280 - subH, 720, subH);
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 34px sans-serif';
+        var lines = wrapText(ctx, u.sub, 680);
+        var lineH = 40;
+        var totalH = lines.length * lineH;
+        var startY = 1280 - subH + (subH - totalH) / 2 + lineH / 2;
+        if (lines.length > 2) { ctx.font = 'bold 27px sans-serif'; lineH = 33; startY = 1280 - subH + 16; }
+        for (var li = 0; li < lines.length; li++) {
+          ctx.fillText(lines[li], 360, startY + li * lineH);
+        }
+      }
+
+      var data = await toU8();
+      await ffmpeg.writeFile(u.fname, data);
+    }
+
+    // ── concat \ud30c\uc77c ─────────────────────────────────────────────
+    if (_mp4Cancelled) return;
+    setMp4Progress('\ud0c0\uc784\ub77c\uc778 \uc0dd\uc131 \uc911...', 60);
+    var cc = 'ffconcat version 1.0\n';
+    for (var si = 0; si < segments.length; si++) {
+      var seg = segments[si];
+      var k = seg.img + '|' + (seg.sub || '');
+      cc += 'file ' + seenK[k] + '\n';
+      cc += 'duration ' + seg.dur.toFixed(3) + '\n';
+    }
+    // ffconcat: \ub9c8\uc9c0\ub9c9 \ud30c\uc77c \uc7ac\ubc18\ubcf5 \ud544\uc218
+    var lastSeg = segments[segments.length - 1];
+    cc += 'file ' + seenK[lastSeg.img + '|' + (lastSeg.sub || '')] + '\n';
+    await ffmpeg.writeFile('concat.txt', new TextEncoder().encode(cc));
+
+    // ── \uc624\ub514\uc624 \ub85c\ub4dc ──────────────────────────────────────────
+    if (_mp4Cancelled) return;
+    setMp4Progress('\uc624\ub514\uc624 \ub85c\ub529 \uc911...', 62);
+    var aResp = await fetch('audio.m4a');
+    var aData = new Uint8Array(await aResp.arrayBuffer());
+    await ffmpeg.writeFile('audio.m4a', aData);
+
+    // ── \uc778\ucf54\ub529 ─────────────────────────────────────────────────
+    if (_mp4Cancelled) return;
+    setMp4Progress('\uc601\uc0c1 \uc778\ucf54\ub529 \uc911... (\uc218 \ubd84 \uc18c\uc694)', 65);
+    ffmpeg.on('progress', function(p) {
+      if (p && p.progress != null) {
+        setMp4Progress('\uc778\ucf54\ub529 \uc911... ' + Math.round(p.progress * 100) + '%', 65 + p.progress * 30);
+      }
+    });
+
+    await ffmpeg.exec([
+      '-f', 'concat', '-safe', '0', '-i', 'concat.txt',
+      '-i', 'audio.m4a',
+      '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
+      '-pix_fmt', 'yuv420p',
+      '-c:a', 'copy',
+      '-shortest',
+      '-movflags', '+faststart',
+      'output.mp4'
+    ]);
+
+    // ── \ub2e4\uc6b4\ub85c\ub4dc ─────────────────────────────────────────────
+    if (_mp4Cancelled) return;
+    setMp4Progress('\ub2e4\uc6b4\ub85c\ub4dc \uc900\ube44 \uc911...', 96);
+    var out = await ffmpeg.readFile('output.mp4');
+    var url = URL.createObjectURL(new Blob([out.buffer], {type: 'video/mp4'}));
+    var a = document.createElement('a');
+    a.href = url; a.download = 'mama-tail.mp4';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 30000);
+
+    setMp4Progress('\ub2e4\uc6b4\ub85c\ub4dc \uc644\ub8cc!', 100);
+    setTimeout(function() { overlay.style.display = 'none'; }, 3000);
+
+    // \uc815\ub9ac
+    for (var ui = 0; ui < uniq.length; ui++) { try { await ffmpeg.deleteFile(uniq[ui].fname); } catch(e){} }
+    try { await ffmpeg.deleteFile('concat.txt'); } catch(e){}
+    try { await ffmpeg.deleteFile('audio.m4a'); } catch(e){}
+    try { await ffmpeg.deleteFile('output.mp4'); } catch(e){}
+
+  } catch (err) {
+    console.error('MP4 error:', err);
+    document.getElementById('mp4-overlay').style.display = 'none';
+    showSavePopup('\uc624\ub958: ' + (err.message || '\uc54c \uc218 \uc5c6\ub294 \uc624\ub958') + '\n\n\ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694.');
+  }
 }
 
 function loadImgSync() {
