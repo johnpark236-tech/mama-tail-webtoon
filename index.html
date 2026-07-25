@@ -892,8 +892,8 @@ function adjustImgSync(delta) {
 
 // ── 이미지 자동 스크롤 ───────────────────────────────────────────
 function updateImageSync(ct) {
-  let imgIdx = 1;
-  for (let i = 0; i < IMAGE_TIMELINE.length; i++) {
+  var imgIdx = 1;
+  for (var i = 0; i < IMAGE_TIMELINE.length; i++) {
     if (ct >= IMAGE_TIMELINE[i]) imgIdx = i + 1;
     else break;
   }
@@ -901,17 +901,16 @@ function updateImageSync(ct) {
   if (imgIdx === abCurrentImg) return;
   abCurrentImg = imgIdx;
 
-  // 해당 씬으로 스크롤
   document.getElementById('ab-progress').textContent = imgIdx + ' / ' + TOTAL_IMAGES;
-  const el = document.getElementById('ab-scene-' + imgIdx);
+
+  var el = document.getElementById('ab-scene-' + imgIdx);
   if (el && !isScrollingToImage) {
     isScrollingToImage = true;
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setTimeout(() => { isScrollingToImage = false; }, 1000);
+    var headerOffset = 57 + 60;
+    var top = el.getBoundingClientRect().top + window.pageYOffset - headerOffset;
+    window.scrollTo({ top: top, behavior: 'smooth' });
+    setTimeout(function() { isScrollingToImage = false; }, 1200);
   }
-
-  document.getElementById('ab-progress').textContent =
-    `${imgIdx} / ${TOTAL_IMAGES}`;
 }
 
 // ══════════════════════════════════════════════════════════════════
