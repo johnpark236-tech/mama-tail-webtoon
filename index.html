@@ -760,6 +760,22 @@ function saveImgSync() {
     var orig = btn.textContent; btn.textContent = '✅ 저장됨';
     setTimeout(function() { btn.textContent = orig; }, 1500);
   });
+  var wtTxt = wtImgOffset === 0 ? "기본값" : (wtImgOffset > 0 ? "+" : "") + wtImgOffset;
+  var abTxt = abImgOffset === 0 ? "기본값" : (abImgOffset > 0 ? "+" : "") + abImgOffset;
+  showSavePopup(
+    "💾 싱크 저장 완료\n\n" +
+    "📖 웹툰 이미지 싱크: " + wtTxt + "\n" +
+    "🎧 오디오북 이미지 싱크: " + abTxt + "\n\n" +
+    "다음 실행 시 자동으로 적용됩니다."
+  );
+}
+
+function showSavePopup(msg) {
+  var overlay = document.getElementById('save-popup-overlay');
+  var text = document.getElementById('save-popup-text');
+  if (!overlay || !text) return;
+  text.textContent = msg;
+  overlay.style.display = 'flex';
 }
 
 function loadImgSync() {
@@ -837,6 +853,13 @@ function makeEndingCard(mode) {
     </div>`;
   return div;
 }
+<div id="save-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#1e1e2e;border:1px solid #f5c842;border-radius:14px;padding:28px 32px;max-width:320px;width:90%;text-align:center;">
+    <div id="save-popup-text" style="color:#e2e8f0;font-size:0.95rem;line-height:1.8;white-space:pre-line;"></div>
+    <button onclick="document.getElementById('save-popup-overlay').style.display='none'" 
+      style="margin-top:18px;background:#f5c842;color:#0a0a0a;border:none;border-radius:8px;padding:8px 28px;font-size:0.9rem;cursor:pointer;font-weight:bold;">확인</button>
+  </div>
+</div>
 // 저장된 싱크 복원
 loadImgSync();
 </script>
