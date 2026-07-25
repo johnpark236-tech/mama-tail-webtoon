@@ -502,6 +502,21 @@ body {
   <div id="sync-indicator"></div>
 </div>
 
+<div id="back-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9998;align-items:center;justify-content:center;">
+  <div style="background:#1e1e2e;border:1px solid #4a4a6a;border-radius:16px;padding:28px 28px 20px;max-width:300px;width:88%;text-align:center;">
+    <div id="back-popup-msg" style="color:#e2e8f0;font-size:1rem;line-height:1.7;margin-bottom:20px;white-space:pre-line;"></div>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button onclick="backPopupYes()" style="flex:1;background:#f5c842;color:#0a0a0a;border:none;border-radius:8px;padding:10px;font-size:0.95rem;font-weight:bold;cursor:pointer;">예</button>
+      <button onclick="backPopupNo()"  style="flex:1;background:#2a2a3e;color:#a0aec0;border:1px solid #4a4a6a;border-radius:8px;padding:10px;font-size:0.95rem;cursor:pointer;">아니요</button>
+    </div>
+  </div>
+</div>
+<div id="save-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#1e1e2e;border:1px solid #f5c842;border-radius:14px;padding:28px 32px;max-width:320px;width:90%;text-align:center;">
+    <div id="save-popup-text" style="color:#e2e8f0;font-size:0.95rem;line-height:1.8;white-space:pre-line;"></div>
+    <button onclick="document.getElementById('save-popup-overlay').style.display='none'" style="margin-top:18px;background:#f5c842;color:#0a0a0a;border:none;border-radius:8px;padding:8px 28px;font-size:0.9rem;cursor:pointer;font-weight:bold;">확인</button>
+  </div>
+</div>
 <script>
 // ══════════════════════════════════════════════════════════════════
 // 데이터
@@ -881,22 +896,9 @@ function makeEndingCard(mode) {
     </div>`;
   return div;
 }
-<div id="back-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9998;align-items:center;justify-content:center;">
-  <div style="background:#1e1e2e;border:1px solid #4a4a6a;border-radius:16px;padding:28px 28px 20px;max-width:300px;width:88%;text-align:center;">
-    <div id="back-popup-msg" style="color:#e2e8f0;font-size:1rem;line-height:1.7;margin-bottom:20px;white-space:pre-line;"></div>
-    <div style="display:flex;gap:12px;justify-content:center;">
-      <button id="back-popup-yes" onclick="backPopupYes()" style="flex:1;background:#f5c842;color:#0a0a0a;border:none;border-radius:8px;padding:10px;font-size:0.95rem;font-weight:bold;cursor:pointer;">예</button>
-      <button id="back-popup-no"  onclick="backPopupNo()"  style="flex:1;background:#2a2a3e;color:#a0aec0;border:1px solid #4a4a6a;border-radius:8px;padding:10px;font-size:0.95rem;cursor:pointer;">아니요</button>
-    </div>
-  </div>
+
 </div>
-<div id="save-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#1e1e2e;border:1px solid #f5c842;border-radius:14px;padding:28px 32px;max-width:320px;width:90%;text-align:center;">
-    <div id="save-popup-text" style="color:#e2e8f0;font-size:0.95rem;line-height:1.8;white-space:pre-line;"></div>
-    <button onclick="document.getElementById('save-popup-overlay').style.display='none'" 
-      style="margin-top:18px;background:#f5c842;color:#0a0a0a;border:none;border-radius:8px;padding:8px 28px;font-size:0.9rem;cursor:pointer;font-weight:bold;">확인</button>
-  </div>
-</div>
+
 // 저장된 싱크 복원
 loadImgSync();
 
