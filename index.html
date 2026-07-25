@@ -423,7 +423,7 @@ body {
   <header class="viewer-header">
     <button class="btn-home" onclick="goHome()">← 홈</button>
     <span class="header-title">📖 웹툰 모드</span>
-    <span class="header-progress" id="wt-progress">0 / 102</span>
+    <span class="header-progress" id="wt-progress">1 / 102</span>
   </header>
 
   <div class="webtoon-scroll" id="webtoon-container"></div>
@@ -506,14 +506,29 @@ function startWebtoon() {
   showScreen('webtoon-screen');
   wtPage = 1;
   renderWebtoon();
+  setupWtScrollObserver();
+}
+
+function setupWtScrollObserver() {
+  const progressEl = document.getElementById('wt-progress');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        const num = parseInt(id.replace('scene-', ''));
+        if (progressEl) progressEl.textContent = num + ' / ' + TOTAL_IMAGES;
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.scene-block').forEach(el => obs.observe(el));
 }
 
 function renderWebtoon() {
   const container = document.getElementById('webtoon-container');
   container.innerHTML = '';
 
-  const start = (wtPage - 1) * WT_PAGE_SIZE + 1;
-  const end   = Math.min(wtPage * WT_PAGE_SIZE, TOTAL_IMAGES);
+  const start = 1;
+  const end   = TOTAL_IMAGES;
 
   for (let i = start; i <= end; i++) {
     const block = document.createElement('div');
@@ -559,9 +574,18 @@ function renderWebtoon() {
 }
 
 function wtNav(dir) {
-  const maxPage = Math.ceil(TOTAL_IMAGES / WT_PAGE_SIZE);
-  wtPage = Math.max(1, Math.min(wtPage + dir, maxPage));
-  renderWebtoon();
+  const scenes = document.querySelectorAll('.scene-block');
+  let target = null;
+  if (dir > 0) {
+    for (let i = 0; i < scenes.length; i++) {
+      if (scenes[i].getBoundingClientRect().top > 10) { target = scenes[i]; break; }
+    }
+  } else {
+    for (let i = scenes.length - 1; i >= 0; i--) {
+      if (scenes[i].getBoundingClientRect().top < -10) { target = scenes[i]; break; }
+    }
+  }
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ══════════════════════════════════════════════════════════════════
