@@ -695,7 +695,7 @@ function adjustImgSync(delta) {
   if (ind) {
     ind.textContent = abImgOffset === 0
       ? '이미지 싱크 기본값'
-      : 이미지 싱크 ;
+      : '이미지 싱크 ' + (abImgOffset > 0 ? '+' : '') + abImgOffset;
     ind.classList.add('visible');
     clearTimeout(ind._t);
     ind._t = setTimeout(() => ind.classList.remove('visible'), 2000);
