@@ -675,9 +675,7 @@ function renderAudiobook() {
 
     const imgIdx = Math.max(1, Math.min(TOTAL_IMAGES, i + abImgOffset));
     const imgNum = String(imgIdx).padStart(3, '0');
-    block.innerHTML = '<img src="images/' + imgNum + '.jpg"
-                            alt="씬 ' + i + '" loading="lazy"
-                            onerror="this.style.display=\'none\'">';
+    block.innerHTML = '<img src="images/' + imgNum + '.jpg"' + ' alt="씬 ' + i + '" loading="lazy"' + ' onerror="this.style.display=\'none\'">';
     container.appendChild(block);
   }
 
