@@ -526,6 +526,7 @@ function goHome() {
   const audio = document.getElementById('main-audio');
   audio.pause();
   showScreen('title-screen');
+  history.pushState({screen:'home'}, '');
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -537,6 +538,7 @@ let wtImgOffset = 0;
 
 function startWebtoon() {
   showScreen('webtoon-screen');
+  history.pushState({screen:'webtoon'}, '');
   wtPage = 1;
   renderWebtoon();
   setupWtScrollObserver();
@@ -633,6 +635,7 @@ let abImgOffset = 0;
 
 function startAudiobook() {
   showScreen('audiobook-screen');
+  history.pushState({screen:'audiobook'}, '');
   abPage = 1;
   abCurrentImg = 1;
   renderAudiobook();
@@ -778,6 +781,31 @@ function showSavePopup(msg) {
   overlay.style.display = 'flex';
 }
 
+var backPopupCb = null;
+
+function showBackPopup(msg, onYes) {
+  backPopupCb = onYes;
+  document.getElementById('back-popup-msg').textContent = msg;
+  document.getElementById('back-popup-overlay').style.display = 'flex';
+}
+
+function backPopupYes() {
+  document.getElementById('back-popup-overlay').style.display = 'none';
+  if (backPopupCb) { var cb = backPopupCb; backPopupCb = null; cb(); }
+}
+
+function backPopupNo() {
+  document.getElementById('back-popup-overlay').style.display = 'none';
+  backPopupCb = null;
+  history.pushState({screen: getCurrentScreen()}, '');
+}
+
+function getCurrentScreen() {
+  if (document.getElementById('webtoon-screen').classList.contains('active')) return 'webtoon';
+  if (document.getElementById('audiobook-screen').classList.contains('active')) return 'audiobook';
+  return 'home';
+}
+
 function loadImgSync() {
   var wt = localStorage.getItem('wtImgOffset');
   var ab = localStorage.getItem('abImgOffset');
@@ -853,6 +881,15 @@ function makeEndingCard(mode) {
     </div>`;
   return div;
 }
+<div id="back-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9998;align-items:center;justify-content:center;">
+  <div style="background:#1e1e2e;border:1px solid #4a4a6a;border-radius:16px;padding:28px 28px 20px;max-width:300px;width:88%;text-align:center;">
+    <div id="back-popup-msg" style="color:#e2e8f0;font-size:1rem;line-height:1.7;margin-bottom:20px;white-space:pre-line;"></div>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button id="back-popup-yes" onclick="backPopupYes()" style="flex:1;background:#f5c842;color:#0a0a0a;border:none;border-radius:8px;padding:10px;font-size:0.95rem;font-weight:bold;cursor:pointer;">예</button>
+      <button id="back-popup-no"  onclick="backPopupNo()"  style="flex:1;background:#2a2a3e;color:#a0aec0;border:1px solid #4a4a6a;border-radius:8px;padding:10px;font-size:0.95rem;cursor:pointer;">아니요</button>
+    </div>
+  </div>
+</div>
 <div id="save-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#1e1e2e;border:1px solid #f5c842;border-radius:14px;padding:28px 32px;max-width:320px;width:90%;text-align:center;">
     <div id="save-popup-text" style="color:#e2e8f0;font-size:0.95rem;line-height:1.8;white-space:pre-line;"></div>
@@ -862,6 +899,23 @@ function makeEndingCard(mode) {
 </div>
 // 저장된 싱크 복원
 loadImgSync();
+
+// 초기 히스토리 상태 설정
+history.replaceState({screen:'home'}, '');
+
+// 뒤로가기 버튼 처리
+window.addEventListener('popstate', function(e) {
+  var cur = getCurrentScreen();
+  if (cur === 'webtoon' || cur === 'audiobook') {
+    history.pushState({screen: cur}, '');
+    showBackPopup('홈 화면으로 이동하시겠습니까?', function() { goHome(); });
+  } else {
+    history.pushState({screen: 'home'}, '');
+    showBackPopup('앱을 종료하시겠습니까?', function() {
+      history.go(-2);
+    });
+  }
+});
 </script>
 </body>
 </html>
