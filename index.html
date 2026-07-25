@@ -340,6 +340,13 @@ body {
   transition: background 0.15s;
 }
 .save-btn:hover { background: #2a4a3a; }
+.settings-open-btn {
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(42,42,62,0.85); color: #a0aec0;
+  border: 1px solid #4a4a6a; border-radius: 8px;
+  padding: 6px 14px; font-size: 0.85rem; cursor: pointer; z-index: 10;
+}
+.settings-open-btn:hover { background: #2a2a3e; color: #e2e8f0; }
 #wt-sync-indicator {
   position: fixed;
   bottom: 52px; left: 50%; transform: translateX(-50%);
@@ -424,12 +431,14 @@ body {
 <!-- ══════════════════════════════
      1. 타이틀 화면
 ══════════════════════════════ -->
-<div id="title-screen" class="screen active">
+<div id="title-screen" class="screen active" style="position:relative;">
   <span class="title-paw">🐾</span>
   <h1 class="title-main">엄마 꼬리</h1>
   <p class="title-sub">사랑은 반드시 돌아옵니다</p>
   <p class="title-desc">다사랑 숲에서 전해오는 곰 가족의 이야기</p>
   <div class="mode-btns">
+    <button class="settings-open-btn" onclick="openSettings()">⚙️ 설정</button>
+    
     <div class="mode-btn btn-webtoon" onclick="startWebtoon()">
       <span class="btn-icon">📖</span>
       <div class="btn-title">웹툰으로 보기</div>
@@ -498,6 +507,7 @@ body {
   <div id="sync-indicator"></div>
 </div>
 
+<div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9997;align-items:center;justify-content:center;"><div style="background:#1e1e2e;border:1px solid #4a4a6a;border-radius:16px;padding:28px 28px 20px;max-width:320px;width:90%;text-align:center;"><div style="color:#f5c842;font-size:1.1rem;font-weight:bold;margin-bottom:20px;">⚙️ 설정</div><div style="margin-bottom:18px;"><div style="color:#a0aec0;font-size:0.85rem;margin-bottom:8px;">?? 웹툰 글씨 크기</div><div style="display:flex;align-items:center;justify-content:center;gap:12px;"><button onclick="changeFontSize('wt',-0.1)" style="width:36px;height:36px;background:#2a2a3e;color:#e2e8f0;border:1px solid #4a4a6a;border-radius:8px;font-size:1.2rem;cursor:pointer;">−</button><span id="wt-size-display" style="color:#e2e8f0;font-size:1rem;min-width:44px;display:inline-block;text-align:center;">1.0</span><button onclick="changeFontSize('wt',0.1)" style="width:36px;height:36px;background:#2a2a3e;color:#e2e8f0;border:1px solid #4a4a6a;border-radius:8px;font-size:1.2rem;cursor:pointer;">+</button></div></div><div style="margin-bottom:24px;"><div style="color:#a0aec0;font-size:0.85rem;margin-bottom:8px;">?? 오디오북 글씨 크기</div><div style="display:flex;align-items:center;justify-content:center;gap:12px;"><button onclick="changeFontSize('ab',-0.1)" style="width:36px;height:36px;background:#2a2a3e;color:#e2e8f0;border:1px solid #4a4a6a;border-radius:8px;font-size:1.2rem;cursor:pointer;">−</button><span id="ab-size-display" style="color:#e2e8f0;font-size:1rem;min-width:44px;display:inline-block;text-align:center;">1.0</span><button onclick="changeFontSize('ab',0.1)" style="width:36px;height:36px;background:#2a2a3e;color:#e2e8f0;border:1px solid #4a4a6a;border-radius:8px;font-size:1.2rem;cursor:pointer;">+</button></div></div><div style="display:flex;gap:10px;justify-content:center;"><button onclick="saveSettings()" style="flex:1;background:#f5c842;color:#0a0a0a;border:none;border-radius:8px;padding:10px;font-size:0.95rem;font-weight:bold;cursor:pointer;">?? 저장</button><button onclick="closeSettings()" style="flex:1;background:#2a2a3e;color:#a0aec0;border:1px solid #4a4a6a;border-radius:8px;padding:10px;font-size:0.95rem;cursor:pointer;">닫기</button></div></div></div>
 <div id="back-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9998;align-items:center;justify-content:center;">
   <div style="background:#1e1e2e;border:1px solid #4a4a6a;border-radius:16px;padding:28px 28px 20px;max-width:300px;width:88%;text-align:center;">
     <div id="back-popup-msg" style="color:#e2e8f0;font-size:1rem;line-height:1.7;margin-bottom:20px;white-space:pre-line;"></div>
@@ -550,6 +560,7 @@ let wtImgOffset = 0;
 function startWebtoon() {
   showScreen('webtoon-screen');
   history.pushState({screen:'webtoon'}, '');
+  applyFontSize('wt');
   wtPage = 1;
   renderWebtoon();
   setupWtScrollObserver();
@@ -647,6 +658,7 @@ let abImgOffset = 0;
 function startAudiobook() {
   showScreen('audiobook-screen');
   history.pushState({screen:'audiobook'}, '');
+  applyFontSize('ab');
   abPage = 1;
   abCurrentImg = 1;
   renderAudiobook();
@@ -817,6 +829,57 @@ function getCurrentScreen() {
   return 'home';
 }
 
+var wtFontSize = 1.0;
+var abFontSize = 1.0;
+
+function openSettings() {
+  document.getElementById('wt-size-display').textContent = wtFontSize.toFixed(1);
+  document.getElementById('ab-size-display').textContent = abFontSize.toFixed(1);
+  document.getElementById('settings-overlay').style.display = 'flex';
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').style.display = 'none';
+}
+
+function changeFontSize(mode, delta) {
+  if (mode === 'wt') {
+    wtFontSize = Math.round(Math.min(5.0, Math.max(0.1, wtFontSize + delta)) * 10) / 10;
+    document.getElementById('wt-size-display').textContent = wtFontSize.toFixed(1);
+    applyFontSize('wt');
+  } else {
+    abFontSize = Math.round(Math.min(5.0, Math.max(0.1, abFontSize + delta)) * 10) / 10;
+    document.getElementById('ab-size-display').textContent = abFontSize.toFixed(1);
+    applyFontSize('ab');
+  }
+}
+
+function applyFontSize(mode) {
+  if (mode === 'wt') {
+    document.querySelectorAll('.scene-line, .scene-empty, .scene-num').forEach(function(el) {
+      el.style.fontSize = wtFontSize + 'rem';
+    });
+  } else {
+    document.querySelectorAll('.subtitle-inner, .ab-scene-line, .ab-scene-empty').forEach(function(el) {
+      el.style.fontSize = abFontSize + 'rem';
+    });
+  }
+}
+
+function saveSettings() {
+  localStorage.setItem('wtFontSize', String(wtFontSize));
+  localStorage.setItem('abFontSize', String(abFontSize));
+  closeSettings();
+  showSavePopup('⚙️ 설정 저장 완료\n\n?? 웹툰 글씨 크기: ' + wtFontSize.toFixed(1) + '\n?? 오디오북 글씨 크기: ' + abFontSize.toFixed(1) + '\n\n다음 실행 시 자동으로 적용됩니다.');
+}
+
+function loadSettings() {
+  var wt = localStorage.getItem('wtFontSize');
+  var ab = localStorage.getItem('abFontSize');
+  if (wt !== null) wtFontSize = parseFloat(wt);
+  if (ab !== null) abFontSize = parseFloat(ab);
+}
+
 function loadImgSync() {
   var wt = localStorage.getItem('wtImgOffset');
   var ab = localStorage.getItem('abImgOffset');
@@ -895,6 +958,7 @@ function makeEndingCard(mode) {
 
 // 저장된 싱크 복원
 loadImgSync();
+loadSettings();
 
 // 초기 히스토리 상태 설정
 history.replaceState({screen:'home'}, '');
