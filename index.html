@@ -328,6 +328,33 @@ body {
 }
 .sync-btn:hover { background: #3a3a5a; color: #e2e8f0; }
 .sync-btn:active { background: #4a4a6a; }
+.save-btn {
+  background: #1a3a2a;
+  color: #68d391;
+  border: 1px solid #48bb78;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.save-btn:hover { background: #2a4a3a; }
+#wt-sync-indicator {
+  position: fixed;
+  bottom: 52px; left: 50%; transform: translateX(-50%);
+  background: rgba(245,200,66,0.15);
+  color: #f5c842;
+  border: 1px solid rgba(245,200,66,0.4);
+  border-radius: 12px;
+  padding: 3px 12px;
+  font-size: 0.75rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 101;
+}
+#wt-sync-indicator.visible { opacity: 1; }
 #sync-indicator {
   position: fixed;
   bottom: 52px; left: 50%; transform: translateX(-50%);
@@ -429,9 +456,13 @@ body {
   <div class="webtoon-scroll" id="webtoon-container"></div>
 
   <nav class="webtoon-nav">
+    <button class="sync-btn" onclick="adjustWtImgSync(-1)">이미지전</button>
     <button class="nav-btn" id="wt-prev" onclick="wtNav(-1)">◀ 이전</button>
     <button class="nav-btn" id="wt-next" onclick="wtNav(1)">다음 ▶</button>
+    <button class="sync-btn" onclick="adjustWtImgSync(1)">이미지후</button>
+    <button class="save-btn" onclick="saveImgSync()">💾 저장</button>
   </nav>
+  <div id="wt-sync-indicator"></div>
 </div>
 
 <!-- ══════════════════════════════
@@ -466,6 +497,7 @@ body {
     <button class="nav-btn" id="ab-prev" onclick="abNav(-1)">◀ 이전</button>
     <button class="nav-btn" id="ab-next" onclick="abNav(1)">다음 ▶</button>
     <button class="sync-btn" id="ab-img-next" onclick="adjustImgSync(1)" title="이미지 1장 앞으로">이미지후</button>
+    <button class="save-btn" onclick="saveImgSync()">💾 저장</button>
   </nav>
   <div id="sync-indicator"></div>
 </div>
@@ -501,6 +533,7 @@ function goHome() {
 // ══════════════════════════════════════════════════════════════════
 let wtPage = 1;
 const WT_PAGE_SIZE = 10; // 한 번에 보여줄 씬 수
+let wtImgOffset = 0;
 
 function startWebtoon() {
   showScreen('webtoon-screen');
@@ -535,7 +568,8 @@ function renderWebtoon() {
     block.className = 'scene-block';
     block.id = 'scene-' + i;
 
-    const imgNum = String(i).padStart(3, '0');
+    const imgIdx = Math.max(1, Math.min(TOTAL_IMAGES, i + wtImgOffset));
+    const imgNum = String(imgIdx).padStart(3, '0');
     const textsArr = IMAGE_SUBS[i] || [];
 
     let subsHtml = '';
@@ -616,7 +650,8 @@ function renderAudiobook() {
     block.className = 'ab-scene';
     block.id = 'ab-scene-' + i;
 
-    const imgNum = String(i).padStart(3, '0');
+    const imgIdx = Math.max(1, Math.min(TOTAL_IMAGES, i + wtImgOffset));
+    const imgNum = String(imgIdx).padStart(3, '0');
     block.innerHTML = `<img src="images/${imgNum}.jpg"
                             alt="씬 ${i}" loading="lazy"
                             onerror="this.style.display='none'">`;
@@ -709,6 +744,41 @@ function updateSubtitle(ct) {
 }
 
 // ── 이미지 싱크 수동 조정 ─────────────────────────────────────────
+function adjustWtImgSync(delta) {
+  wtImgOffset += delta;
+  renderWebtoon();
+  showSyncHint('wt', wtImgOffset);
+}
+
+function saveImgSync() {
+  localStorage.setItem('wtImgOffset', String(wtImgOffset));
+  localStorage.setItem('abImgOffset', String(abImgOffset));
+  showSyncHint('wt', wtImgOffset);
+  showSyncHint('ab', abImgOffset);
+  var allSave = document.querySelectorAll('.save-btn');
+  allSave.forEach(function(btn) {
+    var orig = btn.textContent; btn.textContent = '✅ 저장됨';
+    setTimeout(function() { btn.textContent = orig; }, 1500);
+  });
+}
+
+function loadImgSync() {
+  var wt = localStorage.getItem('wtImgOffset');
+  var ab = localStorage.getItem('abImgOffset');
+  if (wt !== null) wtImgOffset = parseInt(wt, 10);
+  if (ab !== null) abImgOffset = parseInt(ab, 10);
+}
+
+function showSyncHint(mode, offset) {
+  var id = mode === 'wt' ? 'wt-sync-indicator' : 'sync-indicator';
+  var ind = document.getElementById(id);
+  if (!ind) return;
+  ind.textContent = offset === 0 ? '이미지 싱크 기본값' : '이미지 싱크 ' + (offset > 0 ? '+' : '') + offset;
+  ind.classList.add('visible');
+  clearTimeout(ind._t);
+  ind._t = setTimeout(function() { ind.classList.remove('visible'); }, 2000);
+}
+
 function adjustImgSync(delta) {
   abImgOffset += delta;
   abCurrentImg = -1; // 강제 업데이트
@@ -716,14 +786,7 @@ function adjustImgSync(delta) {
   if (audio) updateImageSync(audio.currentTime);
   // 오프셋 표시
   const ind = document.getElementById('sync-indicator');
-  if (ind) {
-    ind.textContent = abImgOffset === 0
-      ? '이미지 싱크 기본값'
-      : '이미지 싱크 ' + (abImgOffset > 0 ? '+' : '') + abImgOffset;
-    ind.classList.add('visible');
-    clearTimeout(ind._t);
-    ind._t = setTimeout(() => ind.classList.remove('visible'), 2000);
-  }
+  showSyncHint('ab', abImgOffset);
 }
 
 // ── 이미지 자동 스크롤 ───────────────────────────────────────────
@@ -774,6 +837,8 @@ function makeEndingCard(mode) {
     </div>`;
   return div;
 }
+// 저장된 싱크 복원
+loadImgSync();
 </script>
 </body>
 </html>
